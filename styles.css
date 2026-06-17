@@ -394,3 +394,39 @@ body {
     cursor: pointer; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
 }
 .accept-success-btn:hover { background: #e05e00; }
+
+/* --- ESTILOS PARA PRODUCTOS AGOTADOS --- */
+.product-card.agotado-card {
+    position: relative;
+    opacity: 0.6; /* Hace que la tarjeta se vea un poco más opaca */
+}
+
+.badge-agotado {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #ff4444; /* Rojo llamativo */
+    color: white;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 6px rgba(255, 68, 68, 0.4);
+    z-index: 5;
+}
+
+/* Oculta los controles o botones si el producto está agotado */
+.product-card.agotado-card .add-btn,
+.product-card.agotado-card .quantity-controls {
+    display: none !important;
+}
+
+/* Mensaje de aviso donde iba el botón */
+.txt-agotado {
+    color: #ff4444;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
