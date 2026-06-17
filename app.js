@@ -1,7 +1,7 @@
 // ==========================================
 // CONFIGURACIÓN DEL NEGOCIO
 // ==========================================
-const PHONE_NUMBER = "528129411481"; 
+const PHONE_NUMBER = "528125198131"; 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkuwrgkl3Vv68AZ8xZg2JspV_oDmwr_bSmtb-pq6HN9FqF8QIUtbvofZ-dCWucekjS/exec";
 
 let products = [];
@@ -55,13 +55,22 @@ function renderMenu(productsArray) {
         const prodId = product.id.toString().trim();
         const isInCart = cart[prodId];
         
-        const controlsHTML = isInCart 
-            ? `<div class="quantity-controls">
-                <button class="qty-btn" onclick="updateQuantity('${prodId}', -1)">-</button>
-                <span class="qty-number">${cart[prodId].quantity}</span>
-                <button class="qty-btn" onclick="updateQuantity('${prodId}', 1)">+</button>
-               </div>`
-            : `<button class="add-btn" onclick="addToCart('${prodId}')">Agregar +</button>`;
+        // REVISIÓN: Detectamos si el producto está marcado como agotado en el Excel
+        const estaAgotado = product.agotado && product.agotado.toString().trim().toUpperCase() === "SI";
+        
+        // Si está agotado, no lleva botones. Si está disponible, se maneja normal.
+        let controlsHTML = "";
+        if (estaAgotado) {
+            controlsHTML = `<span class="txt-agotado">No disponible</span>`;
+        } else {
+            controlsHTML = isInCart 
+                ? `<div class="quantity-controls">
+                    <button class="qty-btn" onclick="updateQuantity('${prodId}', -1)">-</button>
+                    <span class="qty-number">${cart[prodId].quantity}</span>
+                    <button class="qty-btn" onclick="updateQuantity('${prodId}', 1)">+</button>
+                   </div>`
+                : `<button class="add-btn" onclick="addToCart('${prodId}')">Agregar +</button>`;
+        }
 
         const imgUrl = product.imagen || "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=500&q=80";
         let precioLimpio = product.precio ? product.precio.toString().replace(/[^0-9.]/g, '') : "0";
@@ -69,8 +78,11 @@ function renderMenu(productsArray) {
         if(isNaN(precioFinal)) precioFinal = 0;
 
         const card = document.createElement("div");
-        card.className = "product-card";
+        // Si está agotado, le añadimos la clase 'agotado-card' para aplicar los estilos de CSS
+        card.className = `product-card ${estaAgotado ? 'agotado-card' : ''}`;
+        
         card.innerHTML = `
+            ${estaAgotado ? '<span class="badge-agotado">Agotado</span>' : ''}
             <img src="${imgUrl}" alt="${product.nombre}" class="product-img">
             <div class="product-info">
                 <div>
