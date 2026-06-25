@@ -12,29 +12,39 @@
     <header class="hero">
         <div class="hero-overlay">
             <h1>Tacos & Papas Asadas</h1>
-            <p>🔥 Los mejores tacos y papas asadas a la puerta de tu casa 🔥</p>
+            <p>🔥 Los mejores de la ciudad en la puerta de tu casa 🔥</p>
+	    
+	    <div id="liveCounter" class="live-counter">
+                <span class="pulse-dot"></span>
+                <span id="counterText">⚡ Cargando comunidad...</span>
+            </div>
         </div>
     </header>
 
     <nav class="categories-nav" id="categoriesNav">
-        <button class="category-btn active" onclick="filterCategory('todos')">✨ Todos</button>
-        <button class="category-btn" onclick="filterCategory('papas')">🥔 Papas</button>
-        <button class="category-btn" onclick="filterCategory('tacos')">🌮 Tacos</button>
-        <button class="category-btn" onclick="filterCategory('quesadillas')">🧀 Quesadillas</button>
-	<button class="category-btn" onclick="filterCategory('postres')">🍮 Postres</button>
+        <button class="category-btn active" onclick="filterCategory('todos')"><i class=""></i> Todos</button>
+        <button class="category-btn" onclick="filterCategory('papas')"><i class=""></i> Papas</button>
+        <button class="category-btn" onclick="filterCategory('tacos')"><i class=""></i> Tacos</button>
+        <button class="category-btn" onclick="filterCategory('quesadillas')"><i class=""></i> Quesadillas</button>
+	<button class="category-btn" onclick="filterCategory('bebidas')"><i class=""></i> Bebidas</button>
+        <button class="category-btn" onclick="filterCategory('postres')"><i class=""></i> Postres</button>
+	<button class="category-btn" onclick="filterCategory('otros')"><i class=""></i> Otros</button>
     </nav>
 
     <main class="menu-container" id="menuContainer">
-        </main>
+        <!-- Los productos se cargan dinámicamente aquí -->
+    </main>
 
+    <!-- BARRA DEL CARRITO TOTALMENTE REDISEÑADA EN CÁPSULA -->
     <div id="cartBar" class="cart-bar" style="display: none;" onclick="toggleCartModal(true)">
         <div class="cart-bar-content">
             <span id="cartCount" class="cart-count">0 productos</span>
-            <span class="view-cart-text">Ver Carrito <i class="fa-solid fa-basket-shopping"></i></span>
+            <span class="view-cart-text"><i class="fa-solid fa-basket-shopping"></i> Ver Carrito</span>
             <span id="cartTotalHeader" class="cart-total-header">$0.00</span>
         </div>
     </div>
 
+    <!-- MODAL INTERNO DEL CARRITO -->
     <div id="cartModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -43,7 +53,8 @@
             </div>
 
             <div id="cartItemsList" class="cart-items-list">
-                </div>
+                <!-- Los productos agregados aparecerán aquí -->
+            </div>
 
             <div class="modal-footer">
                 <div class="modal-total-container">
@@ -73,6 +84,7 @@
         </div>
     </div>
 
+    <!-- VENTANA DE ÉXITO -->
     <div id="successModal" class="success-modal" style="display: none;">
         <div class="success-modal-content">
             <div class="success-icon">
