@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function cargarProductosDesdeSheets() {
     const container = document.getElementById("menuContainer");
-    container.innerHTML = "<p style='text-align:center; padding:40px; color:#ff6b00; font-size: 1.2rem;'><i class='fa-solid fa-spinner fa-spin'></i> Cargando el menú delicioso...</p>";
+    container.innerHTML = "<p style='text-align:center; padding:40px; color:#ff5500; font-size: 1.2rem;'><i class='fa-solid fa-spinner fa-spin'></i> Cargando el menú delicioso...</p>";
 
     fetch(GOOGLE_SCRIPT_URL, {
         method: "GET",
@@ -24,11 +24,10 @@ function cargarProductosDesdeSheets() {
     .then(response => response.json())
     .then(data => {
         if (data.error) {
-            container.innerHTML = `<p style='text-align:center; padding:20px; color:#ff4444;'>❌ Error: ${data.error}</p>`;
+            container.innerHTML = `<p style='text-align:center; padding:20px; color:#ff3344;'>❌ Error: ${data.error}</p>`;
             return;
         }
         
-        // CORRECCIÓN SOLUCIÓN BUG: Filtramos los datos del Excel para descartar filas vacías fantasmas
         products = data.filter(product => {
             return product.id && product.nombre && product.id.toString().trim() !== "" && product.nombre.toString().trim() !== "";
         });
@@ -37,28 +36,25 @@ function cargarProductosDesdeSheets() {
     })
     .catch(error => {
         console.error("Error de conexión:", error);
-        container.innerHTML = "<p style='text-align:center; padding:20px; color:#ff4444;'>❌ No se pudo conectar con la base de datos.</p>";
+        container.innerHTML = "<p style='text-align:center; padding:20px; color:#ff3344;'>❌ No se pudo conectar con la base de datos.</p>";
     });
 }
 
-// 2. RENDERIZAR PRODUCTOS
+// 2. RENDERIZAR PRODUCTOS (MAQUETACIÓN VERTICAL PREMIUM)
 function renderMenu(productsArray) {
     const container = document.getElementById("menuContainer");
     container.innerHTML = "";
 
     if (!productsArray || productsArray.length === 0) {
-        container.innerHTML = "<p style='text-align:center; padding:20px; color:#aaa;'>No hay productos disponibles por el momento.</p>";
+        container.innerHTML = "<p style='text-align:center; padding:20px; color:#9e9e9e;'>No hay productos disponibles por el momento.</p>";
         return;
     }
 
     productsArray.forEach(product => {
         const prodId = product.id.toString().trim();
         const isInCart = cart[prodId];
-        
-        // REVISIÓN: Detectamos si el producto está marcado como agotado en el Excel
         const estaAgotado = product.agotado && product.agotado.toString().trim().toUpperCase() === "SI";
         
-        // Si está agotado, no lleva botones. Si está disponible, se maneja normal.
         let controlsHTML = "";
         if (estaAgotado) {
             controlsHTML = `<span class="txt-agotado">No disponible</span>`;
@@ -78,7 +74,6 @@ function renderMenu(productsArray) {
         if(isNaN(precioFinal)) precioFinal = 0;
 
         const card = document.createElement("div");
-        // Si está agotado, le añadimos la clase 'agotado-card' para aplicar los estilos de CSS
         card.className = `product-card ${estaAgotado ? 'agotado-card' : ''}`;
         
         card.innerHTML = `
@@ -105,7 +100,12 @@ function renderMenu(productsArray) {
 function filterCategory(category) {
     const buttons = document.querySelectorAll(".category-btn");
     buttons.forEach(btn => btn.classList.remove("active"));
-    if (event && event.target) event.target.classList.add("active");
+    
+    if (event && event.target) {
+        // Soporte si hacen click en el icono interno del botón
+        const btnActivo = event.target.closest('.category-btn');
+        if (btnActivo) btnActivo.classList.add("active");
+    }
 
     if (category === 'todos') {
         renderMenu(products);
@@ -122,7 +122,7 @@ function addToCart(productId) {
     if (!product) return;
 
     let precioLimpio = product.precio.toString().replace(/[^0-9.]/g, '');
-    let precioNumerico = parseFloat(precioLinter = precioLimpio);
+    let precioNumerico = parseFloat(precioLimpio);
     if (isNaN(precioNumerico)) precioNumerico = 0;
 
     cart[idClave] = {
@@ -148,7 +148,6 @@ function updateQuantity(productId, change) {
     refreshProductCardControl(idClave);
 }
 
-// NUEVA FUNCIÓN: Eliminar el producto por completo desde el icono del bote de basura
 function removeProductFromCart(productId) {
     const idClave = productId.toString().trim();
     if (cart[idClave]) {
@@ -189,8 +188,8 @@ function updateCartUI() {
     if (!cartBar) return;
 
     if (totalItems > 0) {
-        cartBar.style.setProperty("display", "flex", "important");
-        document.getElementById("cartCount").innerText = `${totalItems} ${totalItems === 1 ? 'producto' : 'productos'}`;
+        cartBar.style.setProperty("display", "block", "important");
+        document.getElementById("cartCount").innerText = `${totalItems} ${totalItems === 1 ? 'ítem' : 'ítems'}`;
         document.getElementById("cartTotalHeader").innerText = `$${totalPrice.toFixed(2)}`;
     } else {
         cartBar.style.display = "none";
@@ -207,14 +206,13 @@ function updateCartUI() {
             const item = cart[id];
             const itemRow = document.createElement("div");
             itemRow.className = "cart-item";
-            // AGREGADO: Maquetación con el icono del bote de basura al lado derecho del precio
             itemRow.innerHTML = `
                 <div class="cart-item-left">
                     <span>${item.quantity}x ${item.name}</span>
                 </div>
                 <div class="cart-item-right">
                     <span>$${(item.price * item.quantity).toFixed(2)}</span>
-                    <button class="delete-item-btn" onclick="removeProductFromCart('${id}')" title="Eliminar producto">
+                    <button class="delete-item-btn" onclick="removeProductFromCart('${id}')">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
@@ -236,17 +234,16 @@ function getLocation() {
     if (!navigator.geolocation) return;
 
     statusText.innerText = "⏳ Localizando con precisión...";
-    statusText.style.color = "#ff6b00";
+    statusText.style.color = "#ff5500";
     gpsBtn.disabled = true;
 
     navigator.geolocation.getCurrentPosition(
         (position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-            const accuracy = position.coords.accuracy; // Nos dice el margen de error en metros
+            const accuracy = position.coords.accuracy;
             
             userCoordinates = `https://www.google.com/maps?q=${lat},${lon}`;
-            
             statusText.innerHTML = `✅ ¡Ubicación guardada! (Precisión: +/- ${Math.round(accuracy)}m)`;
             statusText.style.color = "#25D366";
             gpsBtn.disabled = false;
@@ -256,21 +253,15 @@ function getLocation() {
             statusText.innerText = "❌ Permiso denegado o error de señal GPS.";
             gpsBtn.disabled = false;
         },
-        { 
-            enableHighAccuracy: true, // Fuerza el uso del chip GPS real
-            timeout: 15000,           // Le da hasta 15 segundos al celular para encontrar los satélites
-            maximumAge: 0             // Fuerza al celular a buscar una ubicación nueva, no una guardada vieja
-        }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
 }
 
-// 6. PROCESAR PEDIDO
 function sendOrder(event) {
     event.preventDefault();
     const name = document.getElementById("clientName").value.trim();
     const address = document.getElementById("clientAddress").value.trim();
     const references = document.getElementById("clientReferences").value.trim();
-    // Captura de las notas del cliente
     const notes = document.getElementById("clientNotes").value.trim() || "Sin instrucciones especiales.";
 
     let listaProductosExcel = "";
@@ -284,7 +275,6 @@ function sendOrder(event) {
     });
     listaProductosExcel = listaProductosExcel.slice(0, -3);
 
-    // Paquete de datos actualizado incluyendo las notas para Google Sheets
     const pedidoData = {
         nombre: name,
         direccion: address,
@@ -315,7 +305,7 @@ function sendOrder(event) {
         submitBtn.disabled = false;
     })
     .catch(error => {
-        console.error("Error al guardar en Excel:", error);
+        console.error("Error al guardar:", error);
         toggleCartModal(false);
         procesarEnvioWhatsApp(name, address, references, total, notes);
         mostrarVentanaExito(true);
@@ -330,7 +320,7 @@ function procesarEnvioWhatsApp(name, address, references, total, notes) {
     message += `👤 *Cliente:* ${name}\n`;
     message += `🏠 *Dirección:* ${address}\n`;
     message += `📍 *Referencias:* ${references}\n`;
-    message += `💬 *Notas:* ${notes}\n`; // Se agrega la nota en el mensaje de WhatsApp
+    message += `💬 *Notas:* ${notes}\n`; 
     message += `🗺️ *Ubicación GPS:* ${userCoordinates || 'No compartida'}\n`;
     message += `--------------------------------\n`;
     message += `📝 *DETALLE DEL PEDIDO:*\n`;
@@ -359,3 +349,39 @@ function finalizarYRecargar() {
     mostrarVentanaExito(false);
     window.location.reload();
 }
+
+// ==========================================================================
+// CONTROLADOR DEL CONTADOR DE PERSONAS EN VIVO
+// ==========================================================================
+function inicializarContadorEnVivo() {
+    const counterText = document.getElementById("counterText");
+    if (!counterText) return;
+
+    // Generamos un número base realista de personas viendo según la hora (ej: entre 8 y 22 personas)
+    let personasActivas = Math.floor(Math.random() * (22 - 8 + 1)) + 8;
+    
+    // Función para actualizar el texto en pantalla
+    function actualizarPantalla() {
+        counterText.innerHTML = `🔥 <span style="color:#25D366; font-weight:800;">${personasActivas} personas</span> viendo el menú ahora`;
+    }
+
+    actualizarPantalla();
+
+    // Cada 5 segundos simulamos de forma orgánica que entra o sale alguien del menú
+    setInterval(() => {
+        const cambio = Math.random() > 0.5 ? 1 : -1;
+        personasActivas += cambio;
+
+        // Mantener el número en un rango coherente (mínimo 5, máximo 30) para que sea creíble
+        if (personasActivas < 5) personasActivas = 5;
+        if (personasActivas > 30) personasActivas = 30;
+
+        actualizarPantalla();
+    }, 5000);
+}
+
+// Modificamos ligeramente la inicialización para arrancar el contador
+document.addEventListener("DOMContentLoaded", () => {
+    cargarProductosDesdeSheets();
+    inicializarContadorEnVivo(); // <-- Activa el contador al cargar la página
+});
