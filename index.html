@@ -79,6 +79,20 @@
                     <button type="submit" class="submit-order-btn">
                         <i class="fa-brands fa-whatsapp"></i> Enviar Pedido por WhatsApp
                     </button>
+                    
+                    <!-- MÓDULO PUNTO DE VENTA (SISTEMA INTEGRADO EXCLUSIVO PARA ADMINISTRADOR) -->
+                    <div id="adminPanel" style="display: none; border-top: 1px dashed #ff5500; margin-top: 15px; padding-top: 15px;">
+                        <h3 style="color: #ff5500; font-size: 1.1rem; margin-bottom: 12px;"><i class="fa-solid fa-cash-register"></i> Modo Caja (Venta Local)</h3>
+                        <label style="color: #9e9e9e; font-size: 0.85rem; display: block; margin-bottom: 5px;">Método de Pago:</label>
+                        <select id="paymentMethod" style="width: 100%; background: #161616; border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 14px; color: white; margin-bottom: 14px; font-size: 0.95rem;">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
+                            <option value="Transferencia">Transferencia Bancaria</option>
+                        </select>
+                        <button type="button" class="submit-order-btn" style="background: linear-gradient(135deg, #ff5500, #ff8c00); box-shadow: 0 8px 24px rgba(255, 85, 0, 0.35);" onclick="sendLocalOrder()">
+                            <i class="fa-solid fa-circle-check"></i> Registrar Venta Local
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -91,9 +105,9 @@
                 <i class="fa-solid fa-circle-check"></i>
             </div>
             <h2>¡Pedido Enviado con Éxito!</h2>
-            <p>Tu orden ha sido registrada correctamente y te redirigimos a WhatsApp para terminar de procesarla con el repartidor.</p>
+            <p id="successModalMessage">Tu orden ha sido registrada correctamente y te redirigimos a WhatsApp para terminar de procesarla con el repartidor.</p>
             
-            <div class="delivery-time-box">
+            <div id="deliveryTimeBox" class="delivery-time-box">
                 <i class="fa-solid fa-clock"></i>
                 <div>
                     <span>Tiempo Estimado de Entrega:</span>
