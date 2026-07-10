@@ -10,20 +10,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function cargarProductosPOS() {
     const container = document.getElementById("menuContainer");
-    container.innerHTML = "<p style='color:#ff5500; text-align:center; padding:20px;'><i class='fa-solid fa-spinner fa-spin'></i> Sincronizando catálogo...</p>";
+    container.innerHTML = "<p style='color:#ff5500; text-align:center; padding:40px; font-size:1.1rem;'><i class='fa-solid fa-circle-notch fa-spin'></i> Sincronizando Caja con Google Sheets...</p>";
     
     fetch(GOOGLE_SCRIPT_URL, { method: "GET", redirect: "follow" })
     .then(res => res.json())
     .then(data => {
         products = data.filter(p => p.id && p.nombre);
-        
-        // Ejecuta la lectura dinámica de tus categorías del Excel en el POS
         generarCategoriasDinamicasPOS(products);
         renderMenuPOS(products);
     })
     .catch(err => {
         console.error(err);
-        container.innerHTML = "<p style='color:#ff3344;'>❌ Error de enlace a Sheets.</p>";
+        container.innerHTML = "<p style='color:#ff3344; text-align:center;'>❌ Error de red al enlazar base de datos.</p>";
     });
 }
 
@@ -38,6 +36,7 @@ function generarCategoriasDinamicasPOS(productsArray) {
         }
     });
 
+    // Barra de categorías limpia de iconos en formato de texto plano minimalista
     let htmlBotones = `<button class="category-btn active" onclick="filterCategory('todos')">Todos</button>`;
     categoriasUnicas.forEach(cat => {
         htmlBotones += `<button class="category-btn" onclick="filterCategory('${cat}')">${cat}</button>`;
@@ -50,23 +49,24 @@ function renderMenuPOS(productsArray) {
     const container = document.getElementById("menuContainer");
     container.innerHTML = "";
 
+    if(productsArray.length === 0) {
+        container.innerHTML = "<p style='color:#666; padding:20px;'>No se encontraron productos.</p>";
+        return;
+    }
+
     productsArray.forEach(product => {
         const prodId = product.id.toString().trim();
         let precioLimpio = product.precio ? product.precio.toString().replace(/[^0-9.]/g, '') : "0";
         let precioFinal = parseFloat(precioLimpio) || 0;
 
         const card = document.createElement("div");
-        card.className = "product-card";
-        card.style.cursor = "pointer";
+        card.className = "pos-card";
+        card.id = `product-card-${prodId}`;
         card.onclick = () => agregarAlCarritoPOS(prodId);
         
         card.innerHTML = `
-            <div class="product-info" style="padding: 16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                    <h3 style="font-size: 1.1rem; margin:0;">${product.nombre}</h3>
-                    <span style="color: #ff944d; font-weight: 800; font-size: 1.15rem;">$${precioFinal.toFixed(2)}</span>
-                </div>
-            </div>
+            <h3>${product.nombre}</h3>
+            <span class="price">$${precioFinal.toFixed(2)}</span>
         `;
         container.appendChild(card);
     });
@@ -74,14 +74,31 @@ function renderMenuPOS(productsArray) {
 
 function buscarProducto() {
     const query = document.getElementById("posSearch").value.toLowerCase().trim();
+    const clearBtn = document.getElementById("clearSearchBtn");
+    
+    if (query !== "") {
+        clearBtn.style.display = "block";
+    } else {
+        clearBtn.style.display = "none";
+    }
+
     const filtrados = products.filter(p => p.nombre.toLowerCase().includes(query));
     renderMenuPOS(filtrados);
+}
+
+function limpiarBuscador() {
+    document.getElementById("posSearch").value = "";
+    document.getElementById("clearSearchBtn").style.display = "none";
+    renderMenuPOS(products);
 }
 
 function filterCategory(category) {
     const buttons = document.querySelectorAll(".category-btn");
     buttons.forEach(btn => btn.classList.remove("active"));
-    if (typeof event !== 'undefined' && event.target) event.target.classList.add("active");
+    
+    if (typeof event !== 'undefined' && event.target) {
+        event.target.classList.add("active");
+    }
 
     if (category === 'todos') {
         renderMenuPOS(products);
@@ -92,6 +109,13 @@ function filterCategory(category) {
 }
 
 function agregarAlCarritoPOS(productId) {
+    // Animación visual de destello al presionar una tarjeta del menú
+    const cardElement = document.getElementById(`product-card-${productId}`);
+    if (cardElement) {
+        cardElement.classList.add("flash-effect");
+        setTimeout(() => cardElement.classList.remove("flash-effect"), 350);
+    }
+
     if (cart[productId]) {
         cart[productId].quantity += 1;
     } else {
@@ -115,7 +139,7 @@ function actualizarUIPOS() {
     totalVenta = 0;
 
     if (Object.keys(cart).length === 0) {
-        list.innerHTML = '<p style="color: #555; text-align: center; padding: 20px;">La cuenta está vacía.</p>';
+        list.innerHTML = '<p style="color: #444; text-align: center; padding-top: 40px; font-size:0.95rem;">🎟️ Caja vacía. Selecciona un producto de la izquierda.</p>';
         document.getElementById("posTotal").innerText = "$0.00";
         calcularCambio();
         return;
@@ -127,14 +151,19 @@ function actualizarUIPOS() {
         totalVenta += subtotal;
 
         const row = document.createElement("div");
-        row.className = "cart-item";
-        row.style.padding = "10px 0";
+        row.className = "ticket-row";
         row.innerHTML = `
-            <span>${item.quantity}x ${item.name}</span>
+            <div style="display:flex; flex-direction:column; max-width:65%;">
+                <span style="font-weight:600; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name}</span>
+                <span style="font-size:0.85rem; color:#666;">$${item.price.toFixed(2)} c/u</span>
+            </div>
             <div style="display:flex; align-items:center; gap:12px;">
-                <span>$${subtotal.toFixed(2)}</span>
-                <button class="qty-btn" style="padding: 2px 8px; border-radius:6px; background:#222;" onclick="cambiarCantidadPOS('${id}', -1)">-</button>
-                <button class="qty-btn" style="padding: 2px 8px; border-radius:6px; background:#222;" onclick="cambiarCantidadPOS('${id}', 1)">+</button>
+                <span style="font-weight:700; color:#ff944d;">$${subtotal.toFixed(2)}</span>
+                <div class="ticket-controls">
+                    <button class="ticket-btn" onclick="cambiarCantidadPOS('${id}', -1)">-</button>
+                    <span style="font-size:0.9rem; font-weight:800; min-width:18px; text-align:center; color:#fff;">${item.quantity}</span>
+                    <button class="ticket-btn" onclick="cambiarCantidadPOS('${id}', 1)">+</button>
+                </div>
             </div>
         `;
         list.appendChild(row);
@@ -146,14 +175,26 @@ function actualizarUIPOS() {
 
 function alternarCamposEfectivo() {
     const method = document.getElementById("posPaymentMethod").value;
-    const section = document.getElementById("efectivoSection");
+    const inputCtrl = document.getElementById("efectivoInputControl");
+    const fastSection = document.getElementById("fastCashSection");
+    const changeSection = document.getElementById("efectivoSection");
+    
     if (method === "Efectivo") {
-        section.style.display = "block";
+        inputCtrl.style.display = "block";
+        fastSection.style.display = "grid";
+        changeSection.style.display = "flex";
     } else {
-        section.style.display = "none";
+        inputCtrl.style.display = "none";
+        fastSection.style.display = "none";
+        changeSection.style.display = "none";
         document.getElementById("pagaCon").value = "";
         document.getElementById("cambioAEntregar").innerText = "$0.00";
     }
+}
+
+function 快捷Efectivo(denominacion) {
+    document.getElementById("pagaCon").value = denominacion;
+    calcularCambio();
 }
 
 function calcularCambio() {
@@ -173,7 +214,6 @@ function calcularCambio() {
 
 function procesarVentaPOS() {
     if (Object.keys(cart).length === 0) {
-        alert("⚠️ Añade productos a la cuenta primero.");
         return;
     }
 
@@ -182,7 +222,7 @@ function procesarVentaPOS() {
     const notas = document.getElementById("posNotes").value.trim() || "Venta mostrador local";
 
     if (method === "Efectivo" && pagaCon < totalVenta) {
-        alert("⚠️ El monto recibido es menor que el total de la venta.");
+        alert("⚠️ Monto insuficiente.");
         return;
     }
 
@@ -192,7 +232,7 @@ function procesarVentaPOS() {
     const ventaData = {
         nombre: "Venta Local Mostrador",
         direccion: `Sucursal (${method})`,
-        referencias: "POS Local",
+        referencias: "POS Pro Console",
         gps: "No Aplica",
         productos: productosString,
         total: totalVenta,
@@ -204,7 +244,8 @@ function procesarVentaPOS() {
 
     const btn = document.getElementById("btnRegistrarVenta");
     btn.disabled = true;
-    btn.innerText = "⏳ Archivando Venta...";
+    btn.style.background = "#222";
+    btn.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin' style='color:#ff5500;'></i> Archivando venta...";
 
     fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
@@ -214,17 +255,27 @@ function procesarVentaPOS() {
         body: JSON.stringify(ventaData)
     })
     .then(() => {
-        alert("✅ Venta Guardada con éxito en Google Sheets");
         cart = {};
         document.getElementById("posNotes").value = "";
         document.getElementById("pagaCon").value = "";
         actualizarUIPOS();
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Guardar e Imprimir Venta`;
+        
+        // Estado de éxito visual limpio integrado al botón
+        btn.style.background = "#25d366";
+        btn.style.color = "#000";
+        btn.innerHTML = "<i class='fa-solid fa-circle-check'></i> ¡Venta Registrada!";
+        
+        setTimeout(() => {
+            btn.style.background = "linear-gradient(135deg, #ff5500, #ff8c00)";
+            btn.style.color = "#fff";
+            btn.innerHTML = "<i class='fa-solid fa-bolt'></i> Completar Registro de Venta";
+        }, 2000);
     })
     .catch(err => {
         console.error(err);
-        alert("❌ Ocurrió un error al guardar en la nube.");
         btn.disabled = false;
+        btn.style.background = "#ff3344";
+        btn.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Reintentar envío";
     });
 }
