@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Ventas | Filas & Columnas</title>
+    <!-- FUENTES E ICONOS DE FONT AWESOME -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        /* ==========================================================================
+           ESTILOS GENERALES Y LAYOUT DEL PANEL
+           ========================================================================== */
+        .dashboard-wrapper {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* BARRA SUPERIOR DE HERRAMIENTAS (Buscador, Filtros y Botones) */
+        .toolbar {
+            background: #111111;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 16px 24px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        /* CAMPO DE BÚSQUEDA INTERACTIVO */
+        .search-container {
+            position: relative;
+            width: 320px;
+        }
+        .search-container i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ff5500; /* Color naranja de la lupa */
+        }
+        .search-input {
+            width: 100%;
+            background: #181818;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 12px 16px 12px 42px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.25s;
+        }
+        .search-input:focus {
+            border-color: #ff5500;
+            outline: none;
+            box-shadow: 0 0 10px rgba(255, 85, 0, 0.15);
+        }
+
+        /* CONTENEDOR DE LA TABLA CON DESPLAZAMIENTO HORIZONTAL */
+        .table-responsive-container {
+            background: #111111;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 20px;
+            overflow-x: auto;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+        }
+
+        /* ESTILOS DE CELDAS Y ENCABEZADOS DE LA TABLA */
+        .premium-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.92rem;
+            color: #e0e0e0;
+            white-space: nowrap;
+        }
+        .premium-table th {
+            background: #161616;
+            color: #fff;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            letter-spacing: 0.5px;
+            padding: 16px 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            user-select: none;
+        }
+        .premium-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            vertical-align: middle;
+        }
+        .premium-table tbody tr {
+            transition: background 0.2s ease;
+        }
+        .premium-table tbody tr:hover {
+            background: rgba(255, 85, 0, 0.03); /* Brillo sutil al pasar el cursor */
+        }
+
+        /* FORMATOS DE TEXTO Y BADGES (Etiquetas) */
+        .cell-bold { font-weight: 600; color: #fff; }
+        .cell-price { font-weight: 700; color: #ff944d; }
+        .cell-date { color: #888; font-size: 0.85rem; }
+        .cell-badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+        .badge-whatsapp { background: rgba(37, 211, 102, 0.12); color: #25D366; }
+        .badge-local { background: rgba(255, 140, 0, 0.12); color: #ff8c00; }
+
+        .cell-products-list {
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #ccc;
+        }
+
+        /* BOTONES DE ACCIÓN DENTRO DE LA TABLA */
+        .btn-table-action {
+            background: #1c1c1c;
+            border: 1px solid rgba(255,255,255,0.05);
+            color: #ff5500;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-table-action:hover {
+            background: #ff5500;
+            color: #fff;
+            border-color: transparent;
+        }
+        
+        .status-sync {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #25D366;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ESTILOS DE BOTONES DE FILTRO EN PÍLDORA */
+        .filter-btn-custom {
+            background-color: #121212;
+            color: #9e9e9e;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .filter-btn-custom:hover {
+            color: #fff;
+            border-color: rgba(255, 85, 0, 0.5);
+        }
+        .filter-btn-custom.active {
+            background: linear-gradient(135deg, #ff5500, #ff8c00);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(255, 85, 0, 0.25);
+        }
+
+        .filter-section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #555;
+            font-weight: 800;
+            margin-right: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        /* MODAL DE DETALLE COMPLETO DEL PEDIDO */
+        .admin-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: center; 
+            z-index: 99999; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .admin-modal.show { opacity: 1; pointer-events: auto; }
+        .admin-modal-content {
+            background: #111111; border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px; width: 90%; max-width: 550px; padding: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            transform: translateY(-30px); transition: transform 0.3s ease;
+        }
+        .admin-modal.show .admin-modal-content { transform: translateY(0); }
+        .modal-header-detail { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; margin-bottom: 15px; }
+        .modal-close-btn { background: rgba(255,255,255,0.05); color: #fff; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
+        .modal-close-btn:hover { background: #ff3344; }
+        
+        .detail-block { background: #161616; padding: 14px; border-radius: 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.02); }
+        .detail-block h4 { color: #ff5500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .detail-block p { color: #fff; font-size: 0.95rem; font-weight: 600; line-height: 1.4; }
+        
+        .product-item-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.05); }
+        .product-item-row:last-child { border-bottom: none; }
+    </style>
+</head>
+<body style="background: #060606; font-family: 'Outfit', sans-serif;">
+
+    <div class="dashboard-wrapper">
+        
+        <!-- ==========================================================================
+             1. ENCABEZADO Y BOTÓN INTERRUPTOR (Abrir/Cerrar Tienda en Internet)
+             ========================================================================== -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px;">
+            <div>
+                <h1 style="color: #fff; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px;">BITÁCORA DE CONTROL</h1>
+                <p style="color: #555; font-size: 0.85rem; margin-top: 2px;">Registros de la base de datos de ventas en tiempo real</p>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <!-- Botón que cambia la celda H2 de la hoja "Productos" para abrir/cerrar pedidos -->
+                <button id="btnToggleTienda" onclick="toggleEstadoTiendaInternet()" class="filter-btn-custom" style="background: #222; color: #fff; border-radius: 14px; padding: 12px 20px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-shop"></i> Sincronizando Tienda...
+                </button>
+                <div id="tableSyncStatus" class="status-sync">
+                    <i class="fa-solid fa-arrows-rotate fa-spin"></i> Enlazando registros...
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================================================
+             2. BARRA DE HERRAMIENTAS: BÚSQUEDA, FILTROS Y NAVEGACIÓN
+             ========================================================================== -->
+        <div class="toolbar">
+            <!-- BUSCADOR POR TEXTO LIBRE -->
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="tableSearch" class="search-input" placeholder="Buscar por Cliente o Platillo..." oninput="filtrarTabla()">
+            </div>
+            
+            <!-- FILTROS POR CANAL DE VENTA -->
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="filter-section-title">Canal:</span>
+                <button class="filter-btn-custom active" id="fTodos" onclick="cambiarFiltroGrid('todos')">Todos</button>
+                <button class="filter-btn-custom" id="fWhatsApp" onclick="cambiarFiltroGrid('WhatsApp')">WhatsApp</button>
+                <button class="filter-btn-custom" id="fLocal" onclick="cambiarFiltroGrid('Local')">Mostrador</button>
+            </div>
+
+            <!-- FILTROS POR RANGO DE FECHA -->
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="filter-section-title">Fecha:</span>
+                <button class="filter-btn-custom active" id="fdHoy" onclick="cambiarFiltroFecha('hoy')">Hoy</button>
+                <button class="filter-btn-custom" id="fdAyer" onclick="cambiarFiltroFecha('ayer')">Ayer</button>
+                <button class="filter-btn-custom" id="fdSemana" onclick="cambiarFiltroFecha('semana')">7 Días</button>
+                <button class="filter-btn-custom" id="fdTodo" onclick="cambiarFiltroFecha('todo')">Todo</button>
+            </div>
+
+            <!-- BOTONES DE ACCESO DIRECTO (POS + MENÚ DIGITAL) -->
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <!-- Botón Punto de Venta -->
+                <a href="https://menu-digital-blond-nine.vercel.app/pos.html" target="_blank" class="filter-btn-custom" style="background: linear-gradient(135deg, #ff5500, #ff8c00); color: #fff; border-color: transparent; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(255, 85, 0, 0.25);">
+                    <i class="fa-solid fa-cash-register"></i> Abrir Punto de Venta
+                </a>
+
+                <!-- Nuevo Botón Menú Digital -->
+                <a href="https://menu-digital-blond-nine.vercel.app/" target="_blank" class="filter-btn-custom" style="background: #181818; color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-utensils" style="color: #ff5500;"></i> Abrir Menú Digital
+                </a>
+            </div>
+        </div>
+
+        <!-- ==========================================================================
+             3. TABLA PRINCIPAL DE VENTAS
+             ========================================================================== -->
+        <div class="table-responsive-container">
+            <table class="premium-table" id="ordersGrid">
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">Fecha / Hora</th>
+                        <th>Cliente</th>
+                        <th>Canal / Método</th>
+                        <th>Vista Rápida Platillos</th>
+                        <th>Total</th>
+                        <th>Dirección de Entrega</th>
+                        <th style="text-align: center; width: 100px;">Ver Más</th>
+                        <th style="text-align: center; width: 100px;">Mapa</th>
+                    </tr>
+                </thead>
+                <!-- El contenido se rellena dinámicamente desde admin.js -->
+                <tbody id="tableBodyContainer"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         4. VENTANA MODAL VER DETALLE DEL PEDIDO
+         ========================================================================== -->
+    <div id="detailModal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="modal-header-detail">
+                <h2 style="color: #fff; font-size: 1.3rem; font-weight: 800;"><i class="fa-solid fa-receipt" style="color:#ff5500;"></i> Detalle del Pedido</h2>
+                <button class="modal-close-btn" onclick="cerrarModalDetalle()">&times;</button>
+            </div>
+            <div style="max-height: 70vh; overflow-y: auto; padding-right: 5px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="detail-block">
+                        <h4>Cliente</h4>
+                        <p id="lblCliente">-</p>
+                    </div>
+                    <div class="detail-block">
+                        <h4>Fecha / Hora</h4>
+                        <p id="lblFecha">-</p>
+                    </div>
+                </div>
+
+                <div class="detail-block">
+                    <h4>Platillos Ordenados</h4>
+                    <div id="lblProductosContainer" style="color: #fff; font-weight: 600; padding-top: 5px;"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="detail-block">
+                        <h4>Origen / Pago</h4>
+                        <p id="lblMetodo">-</p>
+                    </div>
+                    <div class="detail-block" style="background: rgba(255,85,0,0.05); border-color: rgba(255,85,0,0.15);">
+                        <h4>Total Cobrado</h4>
+                        <p id="lblTotal" style="color:#ff944d; font-size: 1.2rem; font-weight: 800;">$0.00</p>
+                    </div>
+                </div>
+
+                <div class="detail-block">
+                    <h4>Dirección de Entrega</h4>
+                    <p id="lblDireccion" style="font-size:0.9rem; color:#aaa;">-</p>
+                </div>
+
+                <div class="detail-block">
+                    <h4>Referencias de la zona</h4>
+                    <p id="lblReferencias" style="font-size:0.9rem; color:#aaa;">-</p>
+                </div>
+
+                <div class="detail-block">
+                    <h4>Notas Especiales del Cliente</h4>
+                    <p id="lblNotas" style="font-size:0.9rem; color:#ff944d; font-style: italic;">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LÓGICA DE CONTROL -->
+    <script src="admin.js"></script>
+</body>
+</html>
