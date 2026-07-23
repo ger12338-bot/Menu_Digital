@@ -1,7 +1,7 @@
 // ==========================================================================
 // CONFIGURACIÓN GENERAL DEL NEGOCIO
 // ==========================================================================
-const PHONE_NUMBER = "528129411481"; 
+const PHONE_NUMBER = "528131151055"; 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkuwrgkl3Vv68AZ8xZg2JspV_oDmwr_bSmtb-pq6HN9FqF8QIUtbvofZ-dCWucekjS/exec";
 
 let products = [];
