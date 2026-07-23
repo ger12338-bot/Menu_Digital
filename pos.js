@@ -1,0 +1,302 @@
+// ==========================================================================
+// ENDPOINT DE CONEXIÓN CON GOOGLE APPS SCRIPT
+// ==========================================================================
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkuwrgkl3Vv68AZ8xZg2JspV_oDmwr_bSmtb-pq6HN9FqF8QIUtbvofZ-dCWucekjS/exec";
+
+let products = [];
+let cart = {};
+let totalVenta = 0;
+
+document.addEventListener("DOMContentLoaded", () => {
+    cargarProductosPOS();
+});
+
+// ==========================================================================
+// 1. CARGA DE MENÚ PARA LA TERMINAL POS
+// ==========================================================================
+function cargarProductosPOS() {
+    const container = document.getElementById("menuContainer");
+    container.innerHTML = "<p style='color:#ff5500; text-align:center; padding:40px; font-size:1rem;'><i class='fa-solid fa-circle-notch fa-spin'></i> Sincronizando Caja...</p>";
+    
+    fetch(GOOGLE_SCRIPT_URL, { method: "GET", redirect: "follow" })
+    .then(res => res.json())
+    .then(data => {
+        const listaProductos = data.productos || [];
+        products = listaProductos.filter(p => p.id && p.nombre);
+        generarCategoriasDinamicasPOS(products);
+        renderMenuPOS(products);
+    })
+    .catch(err => {
+        console.error("Error en POS de red:", err);
+        container.innerHTML = "<p style='color:#ff3344; text-align:center;'>❌ Error de conexión al sincronizar la base de datos.</p>";
+    });
+}
+
+function generarCategoriasDinamicasPOS(productsArray) {
+    const nav = document.getElementById("categoriesNav");
+    if (!nav) return;
+
+    const categoriasUnicas = new Set();
+    productsArray.forEach(p => {
+        if (p.categoria && p.categoria.toString().trim() !== "") {
+            categoriasUnicas.add(p.categoria.toString().trim());
+        }
+    });
+
+    let htmlBotones = `<button class="category-btn active" onclick="filterCategory('todos', event)">Todos</button>`;
+    categoriasUnicas.forEach(cat => {
+        htmlBotones += `<button class="category-btn" onclick="filterCategory('${cat}', event)">${cat}</button>`;
+    });
+
+    nav.innerHTML = htmlBotones;
+}
+
+// ==========================================================================
+// 2. RENDERIZADO DE MENÚ POS
+// ==========================================================================
+function renderMenuPOS(productsArray) {
+    const container = document.getElementById("menuContainer");
+    container.innerHTML = "";
+
+    if (!productsArray || productsArray.length === 0) {
+        container.innerHTML = "<p style='color:#666; padding:20px; text-align:center;'>No hay productos disponibles.</p>";
+        return;
+    }
+
+    productsArray.forEach(product => {
+        const prodId = product.id.toString().trim();
+        let precioLimpio = product.precio ? product.precio.toString().replace(/[^0-9.]/g, '') : "0";
+        let precioFinal = parseFloat(precioLimpio) || 0;
+
+        const estaAgotado = product.agotado && product.agotado.toString().trim().toUpperCase() === "SI";
+
+        const card = document.createElement("div");
+        card.className = `pos-card ${estaAgotado ? 'pos-card-agotado' : ''}`;
+        card.id = `product-card-${prodId}`;
+        
+        if (!estaAgotado) {
+            card.onclick = () => agregarAlCarritoPOS(prodId);
+        }
+
+        card.innerHTML = `
+            <h3>${product.nombre}</h3>
+            ${estaAgotado 
+                ? '<span class="pos-badge-agotado"><i class="fa-solid fa-ban"></i> AGOTADO</span>' 
+                : `<span class="price">$${precioFinal.toFixed(2)}</span>`
+            }
+        `;
+        container.appendChild(card);
+    });
+}
+
+// ==========================================================================
+// 3. BUSCADOR Y FILTROS
+// ==========================================================================
+function buscarProducto() {
+    const query = document.getElementById("posSearch").value.toLowerCase().trim();
+    const clearBtn = document.getElementById("clearSearchBtn");
+    
+    clearBtn.style.display = query !== "" ? "block" : "none";
+
+    const filtrados = products.filter(p => p.nombre.toLowerCase().includes(query));
+    renderMenuPOS(filtrados);
+}
+
+function limpiarBuscador() {
+    document.getElementById("posSearch").value = "";
+    document.getElementById("clearSearchBtn").style.display = "none";
+    renderMenuPOS(products);
+}
+
+function filterCategory(category, evt) {
+    const buttons = document.querySelectorAll(".category-btn");
+    buttons.forEach(btn => btn.classList.remove("active"));
+    
+    if (evt && evt.target) {
+        evt.target.classList.add("active");
+    }
+
+    if (category === 'todos') {
+        renderMenuPOS(products);
+    } else {
+        const filtrados = products.filter(p => p.categoria && p.categoria.toString().trim().toLowerCase() === category.toLowerCase());
+        renderMenuPOS(filtrados);
+    }
+}
+
+// ==========================================================================
+// 4. CARRITO Y TICKET
+// ==========================================================================
+function agregarAlCarritoPOS(productId) {
+    const cardElement = document.getElementById(`product-card-${productId}`);
+    if (cardElement) {
+        cardElement.classList.add("flash-effect");
+        setTimeout(() => cardElement.classList.remove("flash-effect"), 350);
+    }
+
+    if (cart[productId]) {
+        cart[productId].quantity += 1;
+    } else {
+        const product = products.find(p => p.id.toString().trim() === productId);
+        let precioLimpio = product.precio.toString().replace(/[^0-9.]/g, '');
+        cart[productId] = { name: product.nombre, price: parseFloat(precioLimpio) || 0, quantity: 1 };
+    }
+    actualizarUIPOS();
+}
+
+function cambiarCantidadPOS(productId, cambio) {
+    if (!cart[productId]) return;
+    cart[productId].quantity += cambio;
+    if (cart[productId].quantity <= 0) delete cart[productId];
+    actualizarUIPOS();
+}
+
+function actualizarUIPOS() {
+    const list = document.getElementById("posItemsList");
+    list.innerHTML = "";
+    totalVenta = 0;
+
+    if (Object.keys(cart).length === 0) {
+        list.innerHTML = '<p style="color: #555; text-align: center; padding-top: 30px; font-size:0.85rem;">🎟️ Selecciona productos del menú.</p>';
+        document.getElementById("posTotal").innerText = "$0.00";
+        calcularCambio();
+        return;
+    }
+
+    Object.keys(cart).forEach(id => {
+        const item = cart[id];
+        const subtotal = item.price * item.quantity;
+        totalVenta += subtotal;
+
+        const row = document.createElement("div");
+        row.className = "ticket-row";
+        row.innerHTML = `
+            <div style="display:flex; flex-direction:column; max-width:60%;">
+                <span style="font-weight:600; color:#fff; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name}</span>
+                <span style="font-size:0.75rem; color:#666;">$${item.price.toFixed(2)}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-weight:700; color:#ff944d; font-size:0.85rem;">$${subtotal.toFixed(2)}</span>
+                <div class="ticket-controls">
+                    <button class="ticket-btn" onclick="cambiarCantidadPOS('${id}', -1)">-</button>
+                    <span style="font-size:0.85rem; font-weight:800; min-width:16px; text-align:center; color:#fff;">${item.quantity}</span>
+                    <button class="ticket-btn" onclick="cambiarCantidadPOS('${id}', 1)">+</button>
+                </div>
+            </div>
+        `;
+        list.appendChild(row);
+    });
+
+    document.getElementById("posTotal").innerText = `$${totalVenta.toFixed(2)}`;
+    calcularCambio();
+}
+
+// ==========================================================================
+// 5. CALCULADORA DE CAMBIO Y BILLETES
+// ==========================================================================
+function alternarCamposEfectivo() {
+    const method = document.getElementById("posPaymentMethod").value;
+    const inputCtrl = document.getElementById("efectivoInputControl");
+    const fastSection = document.getElementById("fastCashSection");
+    const changeSection = document.getElementById("efectivoSection");
+    
+    if (method === "Efectivo") {
+        inputCtrl.style.display = "block";
+        fastSection.style.display = "grid";
+        changeSection.style.display = "flex";
+    } else {
+        inputCtrl.style.display = "none";
+        fastSection.style.display = "none";
+        changeSection.style.display = "none";
+        document.getElementById("pagaCon").value = "";
+        document.getElementById("cambioAEntregar").innerText = "$0.00";
+    }
+}
+
+function rapidoEfectivo(denominacion) {
+    document.getElementById("pagaCon").value = denominacion;
+    calcularCambio();
+}
+
+function calcularCambio() {
+    const pagaConInput = document.getElementById("pagaCon").value;
+    const pagaCon = parseFloat(pagaConInput) || 0;
+    const cambioBox = document.getElementById("cambioAEntregar");
+
+    if (pagaCon === 0 || pagaCon < totalVenta) {
+        cambioBox.innerText = "$0.00";
+        cambioBox.style.color = "#ff3344";
+    } else {
+        const cambio = pagaCon - totalVenta;
+        cambioBox.innerText = `$${cambio.toFixed(2)}`;
+        cambioBox.style.color = "#25D366";
+    }
+}
+
+// ==========================================================================
+// 6. REGISTRO DE VENTA
+// ==========================================================================
+function procesarVentaPOS() {
+    if (Object.keys(cart).length === 0) return;
+
+    const method = document.getElementById("posPaymentMethod").value;
+    const pagaCon = parseFloat(document.getElementById("pagaCon").value) || totalVenta;
+    const notas = document.getElementById("posNotes").value.trim() || "Venta mostrador local";
+
+    if (method === "Efectivo" && pagaCon < totalVenta) {
+        alert("⚠️ El monto pagado es menor al total.");
+        return;
+    }
+
+    let productosString = Object.keys(cart).map(id => `${cart[id].quantity}x ${cart[id].name}`).join(" | ");
+    const cambioEntregado = method === "Efectivo" ? (pagaCon - totalVenta) : 0;
+
+    const ventaData = {
+        nombre: "Venta Local Mostrador",
+        direccion: `Sucursal (${method})`,
+        referencias: "POS Pro Console",
+        gps: "No Aplica",
+        productos: productosString,
+        total: totalVenta,
+        notas: notas,
+        metodo_pago: method,
+        efectivo_recibido: pagaCon,
+        cambio: cambioEntregado
+    };
+
+    const btn = document.getElementById("btnRegistrarVenta");
+    btn.disabled = true;
+    btn.style.background = "#222";
+    btn.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin' style='color:#ff5500;'></i> Procesando...";
+
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        cache: "no-cache",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ventaData)
+    })
+    .then(() => {
+        cart = {};
+        document.getElementById("posNotes").value = "";
+        document.getElementById("pagaCon").value = "";
+        actualizarUIPOS();
+        btn.disabled = false;
+        
+        btn.style.background = "#25d366";
+        btn.style.color = "#000";
+        btn.innerHTML = "<i class='fa-solid fa-circle-check'></i> ¡Venta Exitosa!";
+        
+        setTimeout(() => {
+            btn.style.background = "linear-gradient(135deg, #ff5500, #ff8c00)";
+            btn.style.color = "#fff";
+            btn.innerHTML = "<i class='fa-solid fa-bolt'></i> Registrar Venta";
+        }, 2000);
+    })
+    .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        btn.style.background = "#ff3344";
+        btn.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Reintentar";
+    });
+}
