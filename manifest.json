@@ -1,0 +1,21 @@
+{
+  "short_name": "POS Tacos",
+  "name": "Punto de Venta - Tacos y Papas GF",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/gc5Dnjh6/LM.jpg",
+      "type": "image/jpeg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://i.postimg.cc/gc5Dnjh6/LM.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./pos.html",
+  "background_color": "#0d0e12",
+  "theme_color": "#ff5500",
+  "display": "standalone",
+  "orientation": "any"
+}
