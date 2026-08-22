@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Ventas | Tacos & Papas Asadas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #060606;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #e0e0e0;
+            padding-bottom: 30px;
+        }
+
+        .dashboard-wrapper { max-width: 1600px; margin: 0 auto; padding: 20px 15px; }
+
+        .header-container {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 22px; gap: 15px; flex-wrap: wrap;
+        }
+
+        .header-title h1 { color: #fff; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+        .header-title p { color: #777; font-size: 0.85rem; margin-top: 2px; }
+        .header-actions { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+
+        .kpi-container {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px; margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background: #111111; padding: 18px 20px; border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; justify-content: center;
+        }
+
+        .kpi-title {
+            font-size: 0.75rem; color: #888; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;
+        }
+
+        .kpi-value { font-size: 1.7rem; font-weight: 800; margin-top: 4px; }
+
+        .toolbar {
+            background: #111111; border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px; padding: 16px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+        }
+
+        .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        .search-container { position: relative; width: 320px; max-width: 100%; }
+        .search-container i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #ff5500; }
+
+        .search-input {
+            width: 100%; background: #181818; border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 12px 16px 12px 42px; border-radius: 12px; color: #fff; font-size: 0.95rem; transition: all 0.25s;
+        }
+
+        .search-input:focus { border-color: #ff5500; outline: none; box-shadow: 0 0 10px rgba(255, 85, 0, 0.15); }
+        .action-buttons-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        .filter-btn-custom {
+            background-color: #121212; color: #9e9e9e; border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px 16px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: all 0.25s ease; white-space: nowrap;
+        }
+
+        .filter-btn-custom:hover { color: #fff; border-color: rgba(255, 85, 0, 0.5); }
+        .filter-btn-custom.active {
+            background: linear-gradient(135deg, #ff5500, #ff8c00); color: #fff;
+            border-color: transparent; box-shadow: 0 4px 12px rgba(255, 85, 0, 0.25);
+        }
+
+        .filter-section-title { font-size: 0.75rem; text-transform: uppercase; color: #555; font-weight: 800; margin-right: 4px; letter-spacing: 0.5px; }
+        .status-sync { font-size: 0.85rem; font-weight: 600; color: #25D366; display: flex; align-items: center; gap: 8px; }
+
+        /* Tabla Escritorio */
+        .table-responsive-container {
+            background: #111111; border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 20px; overflow-x: auto; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+        }
+
+        .premium-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.92rem; color: #e0e0e0; }
+
+        .premium-table th {
+            background: #161616; color: #fff; font-weight: 700; text-transform: uppercase;
+            font-size: 0.78rem; letter-spacing: 0.5px; padding: 16px 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05); white-space: nowrap;
+        }
+
+        .premium-table td { padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); vertical-align: middle; }
+        .premium-table tbody tr { transition: background 0.2s ease; }
+        .premium-table tbody tr:hover { background: rgba(255, 85, 0, 0.03); }
+
+        .tr-cancelado {
+            background: rgba(255, 51, 68, 0.06) !important;
+            opacity: 0.65;
+        }
+        .tr-cancelado .cell-bold, .tr-cancelado .cell-price {
+            text-decoration: line-through;
+            color: #888 !important;
+        }
+
+        .cell-bold { font-weight: 600; color: #fff; }
+        .cell-price { font-weight: 700; color: #ff944d; }
+        .cell-date { color: #888; font-size: 0.85rem; }
+        .cell-badge { padding: 4px 10px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; display: inline-block; }
+        .badge-whatsapp { background: rgba(37, 211, 102, 0.12); color: #25D366; }
+        .badge-local { background: rgba(255, 140, 0, 0.12); color: #ff8c00; }
+        
+        .badge-pendiente { background: rgba(255, 148, 77, 0.15); color: #ff944d; border: 1px solid rgba(255, 148, 77, 0.4); }
+        .badge-entregado { background: rgba(37, 211, 102, 0.15); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.3); }
+        .badge-cancelado { background: rgba(255, 51, 68, 0.15); color: #ff3344; border: 1px solid rgba(255, 51, 68, 0.3); }
+
+        .cell-products-list { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ccc; }
+
+        .btn-table-action {
+            background: #1c1c1c; border: 1px solid rgba(255,255,255,0.05); color: #ff5500;
+            padding: 8px 12px; border-radius: 8px; cursor: pointer; text-decoration: none;
+            font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center;
+            justify-content: center; gap: 6px; transition: all 0.2s;
+        }
+        .btn-table-action:hover { background: #ff5500; color: #fff; border-color: transparent; }
+
+        .btn-cancel-action {
+            background: rgba(255, 51, 68, 0.1); color: #ff3344; border: 1px solid rgba(255, 51, 68, 0.2);
+            padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 700;
+            transition: all 0.2s;
+        }
+        .btn-cancel-action:hover { background: #ff3344; color: #fff; }
+
+        .btn-restore-action {
+            background: rgba(37, 211, 102, 0.1); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.2);
+            padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 700;
+            transition: all 0.2s;
+        }
+        .btn-restore-action:hover { background: #25D366; color: #fff; }
+
+        /* Modales */
+        .admin-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 99999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; padding: 15px;
+        }
+        .admin-modal.show { opacity: 1; pointer-events: auto; }
+
+        .admin-modal-content {
+            background: #111111; border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px; width: 100%; max-width: 550px; padding: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); transform: translateY(-20px); transition: transform 0.3s ease;
+            max-height: 90vh; display: flex; flex-direction: column;
+        }
+        .admin-modal.show .admin-modal-content { transform: translateY(0); }
+
+        .modal-header-detail { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; margin-bottom: 15px; }
+        .modal-close-btn { background: rgba(255,255,255,0.05); color: #fff; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
+        .modal-close-btn:hover { background: #ff3344; }
+
+        .detail-block { background: #161616; padding: 14px; border-radius: 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.02); }
+        .detail-block h4 { color: #ff5500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .detail-block p { color: #fff; font-size: 0.95rem; font-weight: 600; line-height: 1.4; }
+        .product-item-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.05); }
+
+        .menu-mgmt-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: #161616; border-radius: 14px; margin-bottom: 10px; border: 1px solid rgba(255, 255, 255, 0.03); gap: 10px; }
+        .menu-mgmt-info { display: flex; flex-direction: column; flex: 1; }
+        .menu-mgmt-title { font-weight: 700; color: #fff; font-size: 0.95rem; }
+        .menu-mgmt-category { font-size: 0.75rem; color: #888; text-transform: uppercase; }
+        .menu-mgmt-controls { display: flex; align-items: center; gap: 8px; }
+
+        .switch-toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch-toggle input { opacity: 0; width: 0; height: 0; }
+        .slider-round { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #25D366; transition: .3s; border-radius: 34px; }
+        .slider-round:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider-round { background-color: #ff3344; }
+        input:checked + .slider-round:before { transform: translateX(20px); }
+
+        .promo-card-item {
+            background: #161616; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 14px; margin-bottom: 12px;
+        }
+        .promo-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .promo-days-tag { font-size: 0.72rem; color: #ff944d; background: rgba(255, 148, 77, 0.1); padding: 3px 8px; border-radius: 6px; font-weight: 700; }
+        .promo-prices { font-size: 0.9rem; font-weight: 800; color: #25D366; }
+        .promo-prices del { color: #777; font-size: 0.8rem; margin-right: 6px; }
+        .form-promo-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .form-promo-group label { font-size: 0.78rem; color: #ff944d; font-weight: 700; text-transform: uppercase; }
+        .form-promo-input { background: #181818; border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; padding: 10px; border-radius: 10px; font-size: 0.9rem; width: 100%; }
+        .form-promo-input:focus { outline: none; border-color: #ff5500; }
+        .days-checkboxes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+        .day-chip { display: flex; align-items: center; gap: 4px; background: #222; padding: 6px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); }
+
+        /* MODAL LOGIN */
+        .login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #060606; z-index: 999999; display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+
+        .login-card {
+            background: #111111; border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px; padding: 30px 25px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+        }
+
+        .login-icon {
+            width: 70px; height: 70px; background: rgba(255, 85, 0, 0.1); color: #ff5500;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; margin: 0 auto 15px auto; border: 1px solid rgba(255, 85, 0, 0.2);
+        }
+
+        .login-input {
+            width: 100%; background: #181818; border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px; border-radius: 12px; color: #fff; font-size: 1.2rem;
+            text-align: center; letter-spacing: 4px; margin: 20px 0 15px 0; font-weight: 800;
+        }
+
+        .login-input:focus { outline: none; border-color: #ff5500; box-shadow: 0 0 12px rgba(255,85,0,0.2); }
+
+        .btn-login {
+            width: 100%; background: linear-gradient(135deg, #ff5500, #ff8c00);
+            color: #fff; border: none; padding: 14px; border-radius: 12px;
+            font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.3s;
+        }
+
+        @media (max-width: 992px) {
+            .search-container { width: 100%; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .filter-group { width: 100%; justify-content: flex-start; }
+            .action-buttons-group { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; }
+            .action-buttons-group .filter-btn-custom { flex: 1; text-align: center; justify-content: center; }
+        }
+
+        @media (max-width: 600px) {
+            .dashboard-wrapper { padding: 12px 8px; }
+            .header-container { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .header-actions { width: 100%; justify-content: space-between; }
+            .kpi-container { grid-template-columns: 1fr; gap: 10px; }
+            .kpi-card { padding: 14px 16px; }
+            .kpi-value { font-size: 1.4rem; }
+            .grid-two-cols { grid-template-columns: 1fr !important; }
+            
+            .table-responsive-container { background: transparent; border: none; box-shadow: none; }
+            .premium-table, .premium-table thead, .premium-table tbody, .premium-table th, .premium-table td, .premium-table tr { display: block; }
+            .premium-table thead { display: none; }
+            
+            .premium-table tbody tr {
+                background: #111; border: 1px solid rgba(255, 255, 255, 0.06);
+                border-radius: 16px; margin-bottom: 12px; padding: 14px;
+            }
+
+            .premium-table td {
+                padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+                display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem;
+            }
+
+            .premium-table td:last-child { border-bottom: none; }
+            .premium-table td::before {
+                content: attr(data-label); font-size: 0.72rem; font-weight: 700; color: #777; text-transform: uppercase;
+            }
+
+            .cell-products-list { max-width: 170px; text-align: right; }
+            .admin-modal { padding: 10px; }
+            .admin-modal-content { padding: 15px; border-radius: 18px; max-height: 94vh; }
+            .menu-mgmt-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .menu-mgmt-controls { width: 100%; justify-content: space-between; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA LOGIN -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card">
+            <div class="login-icon"><i class="fa-solid fa-lock"></i></div>
+            <h2 style="color: #fff; font-size: 1.3rem; font-weight: 800;">Acceso Restringido</h2>
+            <p style="color: #888; font-size: 0.85rem; margin-top: 4px;">Ingresa el PIN de Administrador</p>
+            
+            <form onsubmit="procesarLoginPIN(event)">
+                <input type="password" id="inputPinAdmin" class="login-input" placeholder="••••" maxlength="8" required autofocus>
+                <button type="submit" id="btnLoginSubmit" class="btn-login"><i class="fa-solid fa-key"></i> Entrar al Panel</button>
+            </form>
+            <p id="lblErrorLogin" style="color: #ff3344; font-size: 0.8rem; font-weight: 700; margin-top: 12px; display: none;"></p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="dashboard-wrapper">
+        <div class="header-container">
+            <div class="header-title">
+                <h1>BITÁCORA DE CONTROL</h1>
+                <p>Registros de la base de datos de ventas en tiempo real</p>
+            </div>
+            
+            <div class="header-actions">
+                <button id="btnToggleTienda" onclick="toggleEstadoTiendaInternet()" class="filter-btn-custom" style="background: #222; color: #fff; border-radius: 14px; padding: 10px 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-shop"></i> Sincronizando...
+                </button>
+                <div id="tableSyncStatus" class="status-sync">
+                    <i class="fa-solid fa-arrows-rotate fa-spin"></i> Enlazando...
+                </div>
+                <button onclick="cerrarSesionAdmin()" class="filter-btn-custom" style="background: rgba(255,51,68,0.15); color: #ff3344; border-color: rgba(255,51,68,0.3);" title="Cerrar Sesión">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- KPIS DINÁMICOS -->
+        <div class="kpi-container">
+            <div class="kpi-card">
+                <span class="kpi-title"><i class="fa-solid fa-chart-line" style="color:#25D366;"></i> Total Vendido (Neto)</span>
+                <span id="kpiTotalVentas" class="kpi-value" style="color: #25D366;">$0.00</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-title"><i class="fa-solid fa-utensils" style="color:#ff5500;"></i> Pedidos Entregados</span>
+                <span id="kpiCantPedidos" class="kpi-value" style="color: #fff;">0</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-title"><i class="fa-solid fa-receipt" style="color:#ff944d;"></i> Ticket Promedio</span>
+                <span id="kpiTicketPromedio" class="kpi-value" style="color: #ff944d;">$0.00</span>
+            </div>
+        </div>
+
+        <!-- TOOLBAR -->
+        <div class="toolbar">
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="tableSearch" class="search-input" placeholder="Buscar cliente o platillo..." oninput="filtrarTabla()">
+            </div>
+            
+            <div class="filter-group">
+                <span class="filter-section-title">Canal:</span>
+                <button class="filter-btn-custom active" id="fTodos" onclick="cambiarFiltroGrid('todos')">Todos</button>
+                <button class="filter-btn-custom" id="fWhatsApp" onclick="cambiarFiltroGrid('WhatsApp')">WhatsApp</button>
+                <button class="filter-btn-custom" id="fLocal" onclick="cambiarFiltroGrid('Local')">Mostrador</button>
+            </div>
+
+            <div class="filter-group">
+                <span class="filter-section-title">Fecha:</span>
+                <button class="filter-btn-custom active" id="fdHoy" onclick="cambiarFiltroFecha('hoy')">Hoy</button>
+                <button class="filter-btn-custom" id="fdAyer" onclick="cambiarFiltroFecha('ayer')">Ayer</button>
+                <button class="filter-btn-custom" id="fdSemana" onclick="cambiarFiltroFecha('semana')">7 Días</button>
+                <button class="filter-btn-custom" id="fdTodo" onclick="cambiarFiltroFecha('todo')">Todo</button>
+                <button class="filter-btn-custom" id="fdRango" onclick="cambiarFiltroFecha('rango')"><i class="fa-solid fa-calendar-days"></i> Rango</button>
+            </div>
+
+            <div id="customDateRangeContainer" style="display: none; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span class="filter-section-title">Desde:</span>
+                <input type="date" id="dateStart" class="search-input" style="width: auto; padding: 8px 12px; font-size: 0.85rem;" onchange="filtrarTabla()">
+                <span class="filter-section-title">Hasta:</span>
+                <input type="date" id="dateEnd" class="search-input" style="width: auto; padding: 8px 12px; font-size: 0.85rem;" onchange="filtrarTabla()">
+            </div>
+
+            <div class="action-buttons-group">
+                <button onclick="generarCierreDelDiaCSV()" class="filter-btn-custom" style="background: rgba(37, 211, 102, 0.15); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.4); display: inline-flex; align-items: center; gap: 8px; font-weight: 800;">
+                    <i class="fa-solid fa-file-excel"></i> Cierre del Día
+                </button>
+
+                <button onclick="abrirModalGestionMenu()" class="filter-btn-custom" style="background: #222; color: #ff944d; border: 1px solid rgba(255, 148, 77, 0.3); display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-utensils"></i> Menú
+                </button>
+
+                <button onclick="abrirModalGestionPromos()" class="filter-btn-custom" style="background: #222; color: #00d4ff; border: 1px solid rgba(0, 212, 255, 0.3); display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-fire"></i> Combos
+                </button>
+
+                <a href="https://menu-digital-blond-nine.vercel.app/pos.html" target="_blank" class="filter-btn-custom" style="background: linear-gradient(135deg, #ff5500, #ff8c00); color: #fff; border-color: transparent; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-cash-register"></i> POS
+                </a>
+
+                <a href="https://menu-digital-blond-nine.vercel.app/" target="_blank" class="filter-btn-custom" style="background: #181818; color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-globe" style="color: #ff5500;"></i> Web
+                </a>
+            </div>
+        </div>
+
+        <!-- TABLA -->
+        <div class="table-responsive-container">
+            <table class="premium-table" id="ordersGrid">
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">Fecha / Hora</th>
+                        <th>Cliente</th>
+                        <th>Estatus</th>
+                        <th>Canal / Método</th>
+                        <th>Vista Rápida Platillos</th>
+                        <th>Total</th>
+                        <th style="text-align: center; width: 100px;">Ver Más</th>
+                        <th style="text-align: center; width: 120px;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBodyContainer"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE -->
+    <div id="detailModal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="modal-header-detail">
+                <h2 style="color: #fff; font-size: 1.2rem; font-weight: 800;"><i class="fa-solid fa-receipt" style="color:#ff5500;"></i> Detalle del Pedido</h2>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button class="filter-btn-custom" onclick="imprimirTicketDirecto()" style="background:#222; color:#25D366; border:1px solid rgba(37,211,102,0.4);"><i class="fa-solid fa-print"></i> Ticket</button>
+                    <button class="modal-close-btn" onclick="cerrarModalDetalle()">&times;</button>
+                </div>
+            </div>
+            <div style="overflow-y: auto; padding-right: 5px;">
+                <div class="grid-two-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="detail-block">
+                        <h4>Cliente</h4>
+                        <p id="lblCliente">-</p>
+                    </div>
+                    <div class="detail-block">
+                        <h4>Fecha / Hora</h4>
+                        <p id="lblFecha">-</p>
+                    </div>
+                </div>
+
+                <div class="detail-block">
+                    <h4>Platillos Ordenados</h4>
+                    <div id="lblProductosContainer" style="color: #fff; font-weight: 600; padding-top: 5px;"></div>
+                </div>
+
+                <div class="grid-two-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="detail-block">
+                        <h4>Origen / Pago</h4>
+                        <p id="lblMetodo">-</p>
+                    </div>
+                    <div class="detail-block" style="background: rgba(255,85,0,0.05); border-color: rgba(255,85,0,0.15);">
+                        <h4>Total Cobrado</h4>
+                        <p id="lblTotal" style="color:#ff944d; font-size: 1.2rem; font-weight: 800;">$0.00</p>
+                    </div>
+                </div>
+
+                <div class="detail-block">
+                    <h4>Dirección de Entrega</h4>
+                    <p id="lblDireccion" style="font-size:0.9rem; color:#aaa;">-</p>
+                </div>
+
+                <div class="detail-block">
+                    <h4>Referencias de la zona</h4>
+                    <p id="lblReferencias" style="font-size:0.9rem; color:#aaa;">-</p>
+                </div>
+
+                <div class="detail-block">
+                    <h4>Notas Especiales del Cliente</h4>
+                    <p id="lblNotas" style="font-size:0.9rem; color:#ff944d; font-style: italic;">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MENÚ E INVENTARIO -->
+    <div id="menuMgmtModal" class="admin-modal">
+        <div class="admin-modal-content" style="max-width: 650px;">
+            <div class="modal-header-detail" style="border-bottom: none; margin-bottom: 5px; padding-bottom: 0;">
+                <div>
+                    <h2 style="color: #fff; font-size: 1.2rem; font-weight: 800;"><i class="fa-solid fa-sliders" style="color:#ff5500;"></i> Menú e Inventario</h2>
+                    <p style="color:#888; font-size:0.8rem; margin-top:2px;">Gestión de catálogo, precios y stock</p>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button class="filter-btn-custom" onclick="prepararFormularioNuevoProducto()" style="background: linear-gradient(135deg, #ff5500, #ff8c00); color:#fff; border:none; font-weight:800;">
+                        <i class="fa-solid fa-plus"></i> Nuevo Producto
+                    </button>
+                    <button class="modal-close-btn" onclick="cerrarModalGestionMenu()">&times;</button>
+                </div>
+            </div>
+
+            <!-- FORMULARIO CREAR / EDITAR PRODUCTO -->
+            <div id="productFormBox" style="display: none; background: #161616; padding: 16px; border-radius: 16px; margin: 15px 0; border: 1px solid rgba(255, 85, 0, 0.3);">
+                <h3 id="formProductTitle" style="color: #ff5500; font-size: 1rem; margin-bottom: 12px;">Crear Nuevo Producto</h3>
+                <form onsubmit="guardarProductoSubmit(event)">
+                    <input type="hidden" id="prodEditId" value="">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-promo-group">
+                            <label>Nombre del Producto *</label>
+                            <input type="text" id="prodNombre" class="form-promo-input" placeholder="Ej. Taco de Carne Asada" required>
+                        </div>
+                        <div class="form-promo-group">
+                            <label>Categoría *</label>
+                            <input type="text" id="prodCategoria" class="form-promo-input" placeholder="Ej. Tacos" required>
+                        </div>
+                    </div>
+
+                    <div class="form-promo-group">
+                        <label>Descripción</label>
+                        <input type="text" id="prodDescripcion" class="form-promo-input" placeholder="Ej. Con tortilla de maíz recién hecha y cebolla asada">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-promo-group">
+                            <label>Precio ($) *</label>
+                            <input type="number" step="any" id="prodPrecio" class="form-promo-input" placeholder="35.00" required>
+                        </div>
+                        <div class="form-promo-group">
+                            <label>Estado Inicial</label>
+                            <select id="prodAgotado" class="form-promo-input">
+                                <option value="NO">DISPONIBLE</option>
+                                <option value="SI">AGOTADO</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-promo-group">
+                        <label>URL de la Imagen (Opcional)</label>
+                        <input type="url" id="prodImagen" class="form-promo-input" placeholder="https://i.postimg.cc/...">
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px;">
+                        <button type="button" onclick="cancelarFormularioProducto()" class="filter-btn-custom" style="background:#333; color:#ccc;">Cancelar</button>
+                        <button type="submit" id="btnGuardarProd" class="filter-btn-custom" style="background: #25D366; color:#fff; font-weight:800; border:none;">
+                            <i class="fa-solid fa-floppy-disk"></i> Guardar Producto
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="search-container" style="width: 100%; margin: 15px 0;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="menuMgmtSearch" class="search-input" placeholder="Buscar platillo por nombre o categoría..." oninput="filtrarListaGestionMenu()">
+            </div>
+            
+            <div id="menuMgmtList" style="overflow-y: auto; padding-right: 5px; max-height: 55vh;">
+                <p style="text-align:center; padding:30px; color:#ff5500;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando productos...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL GESTIÓN DE COMBOS Y PROMOCIONES -->
+    <div id="promosMgmtModal" class="admin-modal">
+        <div class="admin-modal-content" style="max-width: 680px;">
+            <div class="modal-header-detail">
+                <div>
+                    <h2 style="color: #fff; font-size: 1.2rem; font-weight: 800;"><i class="fa-solid fa-fire" style="color:#00d4ff;"></i> Gestión de Combos y Ofertas</h2>
+                    <p style="color:#888; font-size:0.8rem; margin-top:2px;">Configura tus promociones del día</p>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button class="filter-btn-custom" onclick="prepararFormularioNuevaPromo()" style="background: linear-gradient(135deg, #00d4ff, #0072ff); color:#fff; border:none; font-weight:800;">
+                        <i class="fa-solid fa-plus"></i> Nuevo Combo
+                    </button>
+                    <button class="modal-close-btn" onclick="cerrarModalGestionPromos()">&times;</button>
+                </div>
+            </div>
+
+            <div id="promoFormBox" style="display: none; background: #161616; padding: 16px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(0, 212, 255, 0.3);">
+                <h3 id="formPromoTitle" style="color: #00d4ff; font-size: 1rem; margin-bottom: 12px;">Crear Nueva Oferta</h3>
+                <form onsubmit="guardarPromoSubmit(event)">
+                    <input type="hidden" id="promoFilaExcel" value="">
+                    
+                    <div class="form-promo-group">
+                        <label>Días de la semana activos:</label>
+                        <div class="days-checkboxes">
+                            <label class="day-chip"><input type="checkbox" name="chkDia" value="Lunes"> Lunes</label>
+                            <label class="day-chip"><input type="checkbox" name="chkDia" value="Martes"> Martes</label>
+                            <label class="day-chip"><input type="checkbox" name="chkDia" value="Miercoles"> Miércoles</label>
+                            <label class="day-chip"><input type="checkbox" name="chkDia" value="Jueves"> Jueves</label>
+                            <label class="day-chip"><input type="checkbox" name="chkDia" value="Viernes"> Viernes</label>
+                            <label class="day-chip"><input type="checkbox" name="chkDia" value="Sabado"> Sábado</label>
+                            <label class="day-chip"><input type="checkbox" name="chkDia" value="Domingo"> Domingo</label>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-promo-group">
+                            <label>Título del Combo *</label>
+                            <input type="text" id="promoTitulo" class="form-promo-input" placeholder="Ej. Combo Pareja" required>
+                        </div>
+                        <div class="form-promo-group">
+                            <label>Subtítulo / Slogan</label>
+                            <input type="text" id="promoSubtitulo" class="form-promo-input" placeholder="Ej. ¡Para 2 Personas!">
+                        </div>
+                    </div>
+
+                    <div class="form-promo-group">
+                        <label>Descripción detallada</label>
+                        <input type="text" id="promoDescripcion" class="form-promo-input" placeholder="Ej. Incluye 2 órdenes de tacos y 1 refresco de 1.5L">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-promo-group">
+                            <label>Precio de Lista (Tachado)</label>
+                            <input type="number" step="any" id="promoPrecioLista" class="form-promo-input" placeholder="320.00" required>
+                        </div>
+                        <div class="form-promo-group">
+                            <label>Precio Oferta (Cobro Real)</label>
+                            <input type="number" step="any" id="promoPrecioOferta" class="form-promo-input" placeholder="269.00" required>
+                        </div>
+                    </div>
+
+                    <div class="form-promo-group">
+                        <label>Reglas de Selección (Grupales)</label>
+                        <textarea id="promoConfigOpciones" class="form-promo-input" rows="2" placeholder="Ej. Selecciona tu carne: Tacos>Orden | Selecciona tu bebida: Bebidas>1.5" required></textarea>
+                        <span style="font-size:0.7rem; color:#888;">Usa el símbolo <strong>&gt;</strong> para filtrar por palabra clave (ej. Tacos&gt;Orden). Separa grupos con <strong>|</strong></span>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px;">
+                        <button type="button" onclick="cancelarFormularioPromo()" class="filter-btn-custom" style="background:#333; color:#ccc;">Cancelar</button>
+                        <button type="submit" id="btnGuardarPromo" class="filter-btn-custom" style="background: #25D366; color:#fff; font-weight:800; border:none;">
+                            <i class="fa-solid fa-floppy-disk"></i> Guardar Combo
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="promosMgmtList" style="overflow-y: auto; padding-right: 5px; max-height: 50vh;">
+                <p style="text-align:center; padding:30px; color:#00d4ff;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando promociones...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
