@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS - Control y Corte de Caja</title>
+  <style>
+    :root {
+      --primary: #ff4757;
+      --primary-hover: #ff6b81;
+      --bg-dark: #0f172a;
+      --bg-card: #ffffff;
+      --bg-light: #f8fafc;
+      --text-dark: #1e293b;
+      --text-light: #f8fafc;
+      --border-color: #e2e8f0;
+      --accent: #0d9488;
+      --accent-hover: #0f766e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --success: #10b981;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f1f5f9; color: var(--text-dark); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+
+    header {
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-lg);
+      z-index: 10;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    header h2 { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-btn {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      background: rgba(255,255,255,0.08);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
+    .nav-btn.active { background: var(--accent); border-color: transparent; box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3); }
+
+    .main-container { padding: 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+    /* ESTADO DEL TURNO */
+    .status-card {
+      background: white;
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 6px solid var(--accent);
+      border: 1px solid var(--border-color);
+      border-left-width: 6px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .status-card.closed { border-left-color: var(--danger); }
+
+    .status-info h3 { font-size: 1.15rem; font-weight: 800; margin-bottom: 4px; color: var(--text-dark); }
+    .status-info p { font-size: 0.88rem; color: #64748b; font-weight: 500; }
+
+    .action-group-header { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-action-main {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      color: white;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-action-main:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .btn-open-shift { background: linear-gradient(135deg, var(--accent), var(--accent-hover)); }
+    .btn-in-out { background: #475569; }
+    .btn-close-shift { background: linear-gradient(135deg, var(--danger), #dc2626); }
+
+    /* GRID PRINCIPAL DE CAJA */
+    .cash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    .card-box {
+      background: white;
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border: 1px solid var(--border-color);
+    }
+
+    .card-box h4 {
+      font-size: 0.95rem;
+      color: #475569;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 800;
+    }
+
+    .summary-row-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--border-color);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #475569;
+    }
+    .summary-row-item.total-highlight {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      border-bottom: none;
+      background: #f8fafc;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      margin-top: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* SECCIÓN DE VENTAS POR PROPIETARIO */
+    .owner-section {
+      background: white;
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border: 1px solid var(--border-color);
+    }
+    .owner-section h4 {
+      font-size: 0.95rem;
+      color: #475569;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 800;
+    }
+    .owner-card {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .owner-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--text-dark);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+    .owner-product-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      padding: 4px 0;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    /* CALCULADORA DE DENOMINACIONES */
+    .denom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .denom-item { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
+    .denom-item label { font-weight: 800; font-size: 0.85rem; color: #475569; }
+    .denom-input { width: 75px; padding: 6px; border: 1px solid var(--border-color); border-radius: 6px; text-align: center; font-weight: 800; font-size: 0.9rem; outline: none; background: #fff; }
+    .denom-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1); }
+
+    .result-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #166534;
+    }
+    .result-box.diff-minus { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+    .result-box.diff-plus { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+
+    /* MODALES */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(6px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-card {
+      background: white;
+      width: 100%;
+      max-width: 450px;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+    .modal-header h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-dark); }
+    .close-modal { background: #f1f5f9; border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center; }
+    
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-control { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.9rem; outline: none; background: #fff; }
+    .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1); }
+    
+    .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+    .btn-confirm { flex: 1; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: white; border: none; padding: 12px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(13, 148, 136, 0.25); }
+    .btn-cancel { flex: 1; background: #f1f5f9; color: #475569; border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; }
+
+    /* MODAL DINÁMICO PROFESIONAL UNIVERSAL */
+    .custom-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .custom-modal-overlay.show { display: flex; opacity: 1; }
+    .custom-modal-box {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      width: 90%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .custom-modal-overlay.show .custom-modal-box { transform: scale(1); }
+    .custom-modal-icon { font-size: 3rem; margin-bottom: 15px; }
+    .custom-modal-box h3 { font-size: 1.4rem; color: var(--text-dark); margin-bottom: 10px; font-weight: 800; }
+    .custom-modal-box p { font-size: 1rem; color: #64748b; line-height: 1.5; margin-bottom: 25px; }
+    .modal-buttons-flex { display: flex; gap: 10px; }
+
+    /* TICKET IMPRESIÓN FÍSICA CORTE Z */
+    #ticket-print-area { display: none; }
+
+    @media print {
+      @page { size: 58mm auto; margin: 0; }
+      body * { visibility: hidden; }
+      #ticket-print-area, #ticket-print-area * { visibility: visible; }
+      #ticket-print-area {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .ticket-card { width: 100% !important; box-shadow: none !important; padding: 2mm 1mm !important; }
+    }
+
+    .ticket-card {
+      background: #fff;
+      width: 260px;
+      padding: 10px 5px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px;
+      line-height: 1.2;
+      color: #000;
+      margin: 0 auto;
+      font-weight: 700;
+    }
+    .ticket-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px; }
+    .ticket-header h2 { font-size: 1.1rem; font-weight: 900; }
+    .ticket-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+
+    #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 2000; max-width: 90%; }
+    .toast { min-width: 250px; padding: 12px 18px; border-radius: var(--radius-sm); background: #1e293b; color: #fff; font-weight: 600; font-size: 0.88rem; box-shadow: var(--shadow-lg); }
+    .toast.error { background: var(--danger); }
+    .toast.success { background: var(--success); }
+
+    /* RESPONSIVE MEDIA QUERIES */
+    @media (max-width: 900px) {
+      .cash-grid { grid-template-columns: 1fr; }
+      .main-container { padding: 14px; }
+      header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h2>Control y Corte de Caja</h2>
+    <div class="nav-links">
+      <a href="pv.html" class="nav-btn">🛒 Punto de Venta</a>
+      <a href="caja.html" class="nav-btn active">💵 Control de Caja</a>
+      <a href="ventas.html" class="nav-btn">📋 Historial de Ventas</a>
+    </div>
+  </header>
+
+  <div class="main-container">
+
+    <!-- BARRA DE ESTADO DEL TURNO -->
+    <div class="status-card" id="status-card">
+      <div class="status-info">
+        <h3 id="shift-status-title">Verificando estado del turno...</h3>
+        <p id="shift-status-desc">Cargando información desde Google Sheets...</p>
+      </div>
+      <div class="action-group-header">
+        <button class="btn-action-main btn-open-shift" id="btn-open-modal" onclick="openOpenShiftModal()" style="display: none;">🔓 APERTURAR CAJA</button>
+        <button class="btn-action-main btn-in-out" id="btn-mov-modal" onclick="openMovModal()" style="display: none;">💸 MOVIMIENTO DE CAJA</button>
+        <button class="btn-action-main btn-close-shift" id="btn-close-modal" onclick="openCloseShiftModal()" style="display: none;">🔒 CORTE DE CAJA</button>
+      </div>
+    </div>
+
+    <!-- PANEL PRINCIPAL DE CONTABILIDAD DEL TURNO -->
+    <div class="cash-grid">
+      
+      <!-- COLUMNA 1: RESUMEN DE VENTAS Y FLUJO DE EFECTIVO -->
+      <div class="card-box">
+        <h4>Flujo Teórico de Caja</h4>
+        
+        <div class="summary-row-item">
+          <span>Fondo Inicial de Caja:</span>
+          <strong id="val-fondo">$0.00</strong>
+        </div>
+        <div class="summary-row-item">
+          <span>(+) Ventas en Efectivo:</span>
+          <strong id="val-ventas-efectivo" style="color: var(--accent);">$0.00</strong>
+        </div>
+        <div class="summary-row-item">
+          <span>(+) Entradas de Efectivo:</span>
+          <strong id="val-entradas" style="color: var(--accent);">$0.00</strong>
+        </div>
+        <div class="summary-row-item">
+          <span>(-) Salidas de Efectivo:</span>
+          <strong id="val-salidas" style="color: var(--danger);">$0.00</strong>
+        </div>
+        
+        <div class="summary-row-item total-highlight">
+          <span>EFECTIVO ESPERADO EN CAJA:</span>
+          <span id="val-esperado">$0.00</span>
+        </div>
+
+        <h4 style="margin-top: 10px;">Otros Métodos de Pago (No Entran al Cajón)</h4>
+        <div class="summary-row-item">
+          <span>Ventas con Tarjeta:</span>
+          <strong id="val-tarjeta">$0.00</strong>
+        </div>
+        <div class="summary-row-item">
+          <span>Ventas por Transferencia:</span>
+          <strong id="val-transferencia">$0.00</strong>
+        </div>
+        <div class="summary-row-item" style="font-weight: 800; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+          <span>VENTA TOTAL DEL TURNO:</span>
+          <span id="val-venta-total" style="color: var(--accent); font-size: 1.1rem;">$0.00</span>
+        </div>
+      </div>
+
+      <!-- COLUMNA 2: CALCULADORA DE BILLETES Y MONEDAS -->
+      <div class="card-box">
+        <h4>Arqueo Físico de Dinero (Conteo)</h4>
+        
+        <div class="denom-grid">
+          <div class="denom-item"><label>$1000</label><input type="number" class="denom-input" min="0" data-val="1000" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$500</label><input type="number" class="denom-input" min="0" data-val="500" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$200</label><input type="number" class="denom-input" min="0" data-val="200" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$100</label><input type="number" class="denom-input" min="0" data-val="100" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$50</label><input type="number" class="denom-input" min="0" data-val="50" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$20</label><input type="number" class="denom-input" min="0" data-val="20" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$10</label><input type="number" class="denom-input" min="0" data-val="10" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$5</label><input type="number" class="denom-input" min="0" data-val="5" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$2</label><input type="number" class="denom-input" min="0" data-val="2" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$1</label><input type="number" class="denom-input" min="0" data-val="1" oninput="calcConteoFisico()"></div>
+          <div class="denom-item"><label>$0.50</label><input type="number" class="denom-input" min="0" data-val="0.5" oninput="calcConteoFisico()"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 800; color: #475569;">
+            <span>Efectivo Contado:</span>
+            <span id="val-contado">$0.00</span>
+          </div>
+
+          <div class="result-box" id="result-box-diff">
+            Diferencia: $0.00
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECCIÓN: VENTAS DETALLADAS POR PROPIETARIO -->
+    <div class="owner-section">
+      <h4>📊 Desglose de Ventas por Propietario (Platillos y Cantidades)</h4>
+      <div id="owner-breakdown-container" style="display: flex; flex-direction: column; gap: 12px;">
+        <p style="color: #64748b; text-align: center; padding: 10px; font-weight: 600;">Cargando detalle de ventas...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL: APERTURA DE CAJA -->
+  <div class="modal-overlay" id="modal-open-shift">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔓 Apertura de Turno de Caja</h3>
+      </div>
+      <div class="form-group">
+        <label>Fondo Inicial de Caja ($)</label>
+        <input type="number" id="input-fondo-inicial" class="form-control" placeholder="0.00" value="500" min="0">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-confirm" onclick="confirmOpenShift()">Confirmar Apertura</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MOVIMIENTO DE CAJA (ENTRADA / SALIDA) -->
+  <div class="modal-overlay" id="modal-mov">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>💸 Registro de Entrada / Salida</h3>
+        <button class="close-modal" onclick="closeMovModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>Tipo de Movimiento</label>
+        <select id="mov-tipo" class="form-control">
+          <option value="SALIDA">Salida de Efectivo (Egreso)</option>
+          <option value="ENTRADA">Entrada de Efectivo (Ingreso)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Monto ($)</label>
+        <input type="number" id="mov-monto" class="form-control" placeholder="0.00" min="0">
+      </div>
+      <div class="form-group">
+        <label>Concepto / Motivo</label>
+        <input type="text" id="mov-concepto" class="form-control" placeholder="Ej: Compra de insumos">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeMovModal()">Cancelar</button>
+        <button class="btn-confirm" onclick="confirmSaveMovimiento()">Guardar Movimiento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DINÁMICO UNIVERSAL PROFESIONAL -->
+  <div class="custom-modal-overlay" id="universal-modal">
+    <div class="custom-modal-box">
+      <div class="custom-modal-icon" id="modal-icon">🔒</div>
+      <h3 id="modal-title">Corte de Caja</h3>
+      <p id="modal-message">¿Deseas finalizar el turno de caja y generar el Corte Z?</p>
+      <div class="modal-buttons-flex" id="modal-buttons-container">
+        <button class="btn-cancel" onclick="closeUniversalModal()">Cancelar</button>
+        <button class="btn-confirm" id="modal-confirm-action-btn" onclick="executeCloseShift()">Sí, Cerrar Turno</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPROBANTE TÉRMICO OCULTO CORTE Z -->
+  <div id="ticket-print-area">
+    <div class="ticket-card">
+      <div class="ticket-header">
+        <h2>RESTAURANTE / TAQUERÍA</h2>
+        <p>CORTE DE CAJA (TURNO)</p>
+      </div>
+      <div style="font-size: 10px; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
+        <div class="ticket-row"><span>ID Turno:</span><span id="z-id">--</span></div>
+        <div class="ticket-row"><span>Apertura:</span><span id="z-apertura">--</span></div>
+        <div class="ticket-row"><span>Cierre:</span><span id="z-cierre">--</span></div>
+      </div>
+      <div style="font-size: 10px; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
+        <div class="ticket-row"><span>Fondo Inicial:</span><span id="z-fondo">$0.00</span></div>
+        <div class="ticket-row"><span>(+) Ventas Efectivo:</span><span id="z-ventas-efectivo">$0.00</span></div>
+        <div class="ticket-row"><span>(+) Entradas:</span><span id="z-entradas">$0.00</span></div>
+        <div class="ticket-row"><span>(-) Salidas:</span><span id="z-salidas">$0.00</span></div>
+        <div class="ticket-row" style="font-weight: bold; margin-top: 2px;"><span>Efectivo Esperado:</span><span id="z-esperado">$0.00</span></div>
+        <div class="ticket-row" style="font-weight: bold;"><span>Efectivo Contado:</span><span id="z-contado">$0.00</span></div>
+        <div class="ticket-row" style="font-weight: bold; margin-top: 2px;"><span>Diferencia:</span><span id="z-diferencia">$0.00</span></div>
+      </div>
+      <div style="font-size: 10px; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
+        <div class="ticket-row"><span>Ventas Tarjeta:</span><span id="z-tarjeta">$0.00</span></div>
+        <div class="ticket-row"><span>Ventas Transferencia:</span><span id="z-transferencia">$0.00</span></div>
+        <div class="ticket-row" style="font-weight: bold; margin-top: 2px;"><span>VENTA TOTAL:</span><span id="z-total-venta">$0.00</span></div>
+      </div>
+      <div style="text-align: center; margin-top: 25px; font-size: 10px;">
+        <p>___________________________</p>
+        <p>Firma Cajero / Encargado</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwmshhTlMACbqqAA000La_2E3egpaAWPaI0g7ddYHLXo5oFdux31gYgd9Ibfz9i53wqsw/exec';
+
+    let activeShift = null;
+    let shiftSales = { efectivo: 0, tarjeta: 0, transferencia: 0 };
+    let shiftMovements = { entradas: 0, salidas: 0 };
+    let totalContado = 0;
+    let totalEsperado = 0;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      checkShiftStatus();
+    });
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerText = message;
+      container.appendChild(toast);
+      setTimeout(() => { toast.remove(); }, 3000);
+    }
+
+    // FUNCIONES DEL MODAL DINÁMICO PROFESIONAL
+    function showUniversalModal(title, message, icon, confirmCallback, showCancel = true) {
+      document.getElementById('modal-title').innerText = title;
+      document.getElementById('modal-message').innerHTML = message;
+      document.getElementById('modal-icon').innerText = icon;
+
+      const buttonsContainer = document.getElementById('modal-buttons-container');
+      if (showCancel) {
+        buttonsContainer.innerHTML = `
+          <button class="btn-cancel" onclick="closeUniversalModal()">Cancelar</button>
+          <button class="btn-confirm" id="modal-confirm-action-btn">Sí, Continuar</button>
+        `;
+        document.getElementById('modal-confirm-action-btn').onclick = () => {
+          closeUniversalModal();
+          if (confirmCallback) confirmCallback();
+        };
+      } else {
+        buttonsContainer.innerHTML = `
+          <button class="btn-confirm" onclick="closeUniversalModal()">Aceptar</button>
+        `;
+      }
+
+      const modal = document.getElementById('universal-modal');
+      modal.style.display = 'flex';
+      setTimeout(() => { modal.classList.add('show'); }, 10);
+    }
+
+    function closeUniversalModal() {
+      const modal = document.getElementById('universal-modal');
+      modal.classList.remove('show');
+      setTimeout(() => { modal.style.display = 'none'; }, 300);
+    }
+
+    async function checkShiftStatus() {
+      try {
+        const res = await fetch(`${API_URL}?action=getShiftStatus`);
+        const data = await res.json();
+
+        if (data.activeShift) {
+          activeShift = data.activeShift;
+          
+          shiftMovements = { entradas: 0, salidas: 0 };
+          if (data.movements && Array.isArray(data.movements)) {
+            data.movements.forEach(mov => {
+              if (mov.type === 'ENTRADA') {
+                shiftMovements.entradas += mov.amount;
+              } else if (mov.type === 'SALIDA') {
+                shiftMovements.salidas += mov.amount;
+              }
+            });
+          }
+
+          renderActiveShiftUI();
+          await loadShiftFinances();
+        } else {
+          renderClosedShiftUI();
+          openOpenShiftModal();
+        }
+      } catch (err) {
+        showToast('Error al conectar con el servidor', 'error');
+      }
+    }
+
+    function renderActiveShiftUI() {
+      document.getElementById('shift-status-title').innerText = `Turno Activo: ${activeShift.id}`;
+      document.getElementById('shift-status-desc').innerText = `Aperturado el: ${activeShift.startDate} | Fondo Inicial: $${activeShift.initialFund.toFixed(2)}`;
+      document.getElementById('status-card').classList.remove('closed');
+
+      document.getElementById('btn-open-modal').style.display = 'none';
+      document.getElementById('btn-mov-modal').style.display = 'inline-block';
+      document.getElementById('btn-close-modal').style.display = 'inline-block';
+      
+      document.getElementById('val-fondo').innerText = `$${activeShift.initialFund.toFixed(2)}`;
+    }
+
+    function renderClosedShiftUI() {
+      document.getElementById('shift-status-title').innerText = `Caja Cerrada`;
+      document.getElementById('shift-status-desc').innerText = `Abre un nuevo turno para operar las ventas en efectivo.`;
+      document.getElementById('status-card').classList.add('closed');
+
+      document.getElementById('btn-open-modal').style.display = 'inline-block';
+      document.getElementById('btn-mov-modal').style.display = 'none';
+      document.getElementById('btn-close-modal').style.display = 'none';
+
+      document.getElementById('owner-breakdown-container').innerHTML = `<p style="color: #64748b; text-align: center; padding: 10px; font-weight: 600;">Turno cerrado. No hay ventas activas.</p>`;
+    }
+
+    async function loadShiftFinances() {
+      try {
+        const res = await fetch(`${API_URL}?action=getHistory`);
+        const data = await res.json();
+        const ventas = data.ventas || [];
+        const detailsList = data.detalles || [];
+
+        const shiftStartTime = new Date(activeShift.startDate).getTime();
+
+        const completedFolios = new Set();
+        let totalShippingGerardo = 0;
+        let shippingCount = 0;
+        shiftSales = { efectivo: 0, tarjeta: 0, transferencia: 0 };
+        
+        ventas.forEach(v => {
+          if (v.status === 'COMPLETADA' && v.date) {
+            const saleTime = new Date(v.date).getTime();
+            if (saleTime >= shiftStartTime) {
+              completedFolios.add(v.folio);
+              if (v.method === 'EFECTIVO') shiftSales.efectivo += v.total;
+              else if (v.method === 'TARJETA') shiftSales.tarjeta += v.total;
+              else if (v.method === 'TRANSFERENCIA') shiftSales.transferencia += v.total;
+
+              if (v.channel === 'DELIVERY' && v.shipping > 0) {
+                totalShippingGerardo += v.shipping;
+                shippingCount++;
+              }
+            }
+          }
+        });
+
+        document.getElementById('val-ventas-efectivo').innerText = `$${shiftSales.efectivo.toFixed(2)}`;
+        document.getElementById('val-tarjeta').innerText = `$${shiftSales.tarjeta.toFixed(2)}`;
+        document.getElementById('val-transferencia').innerText = `$${shiftSales.transferencia.toFixed(2)}`;
+        
+        const totalVenta = shiftSales.efectivo + shiftSales.tarjeta + shiftSales.transferencia;
+        document.getElementById('val-venta-total').innerText = `$${totalVenta.toFixed(2)}`;
+
+        const ownerMap = {};
+        detailsList.forEach(d => {
+          if (completedFolios.has(d.folio)) {
+            const prop = d.propietario || "General";
+            if (!ownerMap[prop]) {
+              ownerMap[prop] = { totalAmount: 0, items: {} };
+            }
+
+            ownerMap[prop].totalAmount += d.totalLine;
+
+            if (!ownerMap[prop].items[d.name]) {
+              ownerMap[prop].items[d.name] = { qty: 0, amount: 0 };
+            }
+            ownerMap[prop].items[d.name].qty += d.qty;
+            ownerMap[prop].items[d.name].amount += d.totalLine;
+          }
+        });
+
+        if (totalShippingGerardo > 0) {
+          if (!ownerMap['Gerardo']) {
+            ownerMap['Gerardo'] = { totalAmount: 0, items: {} };
+          }
+          ownerMap['Gerardo'].totalAmount += totalShippingGerardo;
+          ownerMap['Gerardo'].items[`🛵 Ingresos por Envíos (Delivery)`] = { qty: shippingCount, amount: totalShippingGerardo };
+        }
+
+        renderOwnerBreakdown(ownerMap);
+        recalculateTotals();
+      } catch (err) {
+        showToast('Error al procesar ventas del turno', 'error');
+      }
+    }
+
+    function renderOwnerBreakdown(ownerMap) {
+      const container = document.getElementById('owner-breakdown-container');
+      const owners = Object.keys(ownerMap);
+
+      if (owners.length === 0) {
+        container.innerHTML = `<p style="color: #64748b; text-align: center; padding: 10px; font-weight: 600;">Aún no hay platillos vendidos en este turno.</p>`;
+        return;
+      }
+
+      let html = '';
+      owners.forEach(owner => {
+        const data = ownerMap[owner];
+        html += `
+          <div class="owner-card">
+            <div class="owner-header">
+              <span>👤 ${owner}</span>
+              <span style="color: var(--accent);">$${data.totalAmount.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 4px;">
+        `;
+
+        for (const [prodName, info] of Object.entries(data.items)) {
+          const isShippingLine = prodName.includes('Ingresos por Envíos');
+          const qtyText = isShippingLine ? `(${info.qty} entregas)` : `(x${info.qty})`;
+
+          html += `
+            <div class="owner-product-row" ${isShippingLine ? 'style="font-weight: 800; color: var(--accent);"' : ''}>
+              <span>• ${prodName} <small style="color: #64748b; font-weight: 600;">${qtyText}</small></span>
+              <strong style="color: var(--text-dark);">$${info.amount.toFixed(2)}</strong>
+            </div>
+          `;
+        }
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function recalculateTotals() {
+      const fondo = activeShift ? activeShift.initialFund : 0;
+      totalEsperado = fondo + shiftSales.efectivo + shiftMovements.entradas - shiftMovements.salidas;
+
+      document.getElementById('val-entradas').innerText = `$${shiftMovements.entradas.toFixed(2)}`;
+      document.getElementById('val-salidas').innerText = `$${shiftMovements.salidas.toFixed(2)}`;
+      document.getElementById('val-esperado').innerText = `$${totalEsperado.toFixed(2)}`;
+
+      calcConteoFisico();
+    }
+
+    function calcConteoFisico() {
+      const inputs = document.querySelectorAll('.denom-input');
+      totalContado = 0;
+
+      inputs.forEach(input => {
+        const value = parseFloat(input.getAttribute('data-val')) || 0;
+        const qty = parseInt(input.value) || 0;
+        totalContado += value * qty;
+      });
+
+      document.getElementById('val-contado').innerText = `$${totalContado.toFixed(2)}`;
+
+      const diff = totalContado - totalEsperado;
+      const diffBox = document.getElementById('result-box-diff');
+
+      if (diff === 0) {
+        diffBox.innerText = `Diferencia: $0.00 (Cuadre Perfecto)`;
+        diffBox.className = `result-box`;
+      } else if (diff > 0) {
+        diffBox.innerText = `Diferencia: +$${diff.toFixed(2)} (Sobrante)`;
+        diffBox.className = `result-box diff-plus`;
+      } else {
+        diffBox.innerText = `Diferencia: -$${Math.abs(diff).toFixed(2)} (Faltante)`;
+        diffBox.className = `result-box diff-minus`;
+      }
+    }
+
+    function openOpenShiftModal() {
+      document.getElementById('modal-open-shift').style.display = 'flex';
+    }
+
+    async function confirmOpenShift() {
+      const fondo = parseFloat(document.getElementById('input-fondo-inicial').value) || 0;
+      const idTurno = `#TUR-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const payload = {
+        action: 'openShift',
+        id_turno: idTurno,
+        fecha_apertura: new Date().toLocaleString(),
+        fondo_inicial: fondo
+      };
+
+      try {
+        showToast('Aperturando turno en Google Sheets...', 'info');
+        await fetch(API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showToast('Turno aperturado correctamente', 'success');
+        document.getElementById('modal-open-shift').style.display = 'none';
+        checkShiftStatus();
+      } catch (err) {
+        showToast('Error al aperturar turno', 'error');
+      }
+    }
+
+    function openMovModal() {
+      document.getElementById('mov-monto').value = '';
+      document.getElementById('mov-concepto').value = '';
+      document.getElementById('modal-mov').style.display = 'flex';
+    }
+
+    function closeMovModal() {
+      document.getElementById('modal-mov').style.display = 'none';
+    }
+
+    async function confirmSaveMovimiento() {
+      const tipo = document.getElementById('mov-tipo').value;
+      const monto = parseFloat(document.getElementById('mov-monto').value) || 0;
+      const concepto = document.getElementById('mov-concepto').value.trim();
+
+      if (monto <= 0 || !concepto) {
+        showToast('Ingresa un monto y concepto válido', 'error');
+        return;
+      }
+
+      if (tipo === 'ENTRADA') shiftMovements.entradas += monto;
+      else shiftMovements.salidas += monto;
+
+      const payload = {
+        action: 'addMovement',
+        id_movimiento: `#MOV-${Math.floor(1000 + Math.random() * 9000)}`,
+        id_turno: activeShift.id,
+        fecha: new Date().toLocaleString(),
+        tipo: tipo,
+        monto: monto,
+        concepto: concepto
+      };
+
+      try {
+        showToast('Guardando movimiento...', 'info');
+        await fetch(API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showToast('Movimiento registrado', 'success');
+        closeMovModal();
+        recalculateTotals();
+      } catch (err) {
+        showToast('Error al registrar movimiento', 'error');
+      }
+    }
+
+    // MODAL DINÁMICO REEMPLAZANDO AL CONFIRM() NATIVO
+    function openCloseShiftModal() {
+      showUniversalModal(
+        "Corte de Caja",
+        "¿Deseas finalizar el turno de caja y generar el Corte Z?",
+        "🔒",
+        () => { executeCloseShift(); },
+        true
+      );
+    }
+
+    async function executeCloseShift() {
+      const diff = totalContado - totalEsperado;
+
+      const inputs = document.querySelectorAll('.denom-input');
+      const desglose = {};
+      inputs.forEach(input => {
+        const val = input.getAttribute('data-val');
+        const qty = parseInt(input.value) || 0;
+        if (qty > 0) desglose[`$${val}`] = qty;
+      });
+
+      const fechaCierre = new Date().toLocaleString();
+
+      const payload = {
+        action: 'closeShift',
+        id_turno: activeShift.id,
+        fecha_cierre: fechaCierre,
+        ventas_efectivo: shiftSales.efectivo,
+        ventas_tarjeta: shiftSales.tarjeta,
+        ventas_transferencia: shiftSales.transferencia,
+        entradas_efectivo: shiftMovements.entradas,
+        salidas_efectivo: shiftMovements.salidas,
+        efectivo_esperado: totalEsperado,
+        efectivo_real: totalContado,
+        diferencia: diff,
+        desglose_billetes: desglose
+      };
+
+      document.getElementById('z-id').innerText = activeShift.id;
+      document.getElementById('z-apertura').innerText = activeShift.startDate;
+      document.getElementById('z-cierre').innerText = fechaCierre;
+      document.getElementById('z-fondo').innerText = `$${activeShift.initialFund.toFixed(2)}`;
+      document.getElementById('z-ventas-efectivo').innerText = `$${shiftSales.efectivo.toFixed(2)}`;
+      document.getElementById('z-entradas').innerText = `$${shiftMovements.entradas.toFixed(2)}`;
+      document.getElementById('z-salidas').innerText = `$${shiftMovements.salidas.toFixed(2)}`;
+      document.getElementById('z-esperado').innerText = `$${totalEsperado.toFixed(2)}`;
+      document.getElementById('z-contado').innerText = `$${totalContado.toFixed(2)}`;
+      document.getElementById('z-diferencia').innerText = `$${diff.toFixed(2)}`;
+      document.getElementById('z-tarjeta').innerText = `$${shiftSales.tarjeta.toFixed(2)}`;
+      document.getElementById('z-transferencia').innerText = `$${shiftSales.transferencia.toFixed(2)}`;
+      document.getElementById('z-total-venta').innerText = `$${(shiftSales.efectivo + shiftSales.tarjeta + shiftSales.transferencia).toFixed(2)}`;
+
+      try {
+        showToast('Cerrando turno en Google Sheets...', 'info');
+        await fetch(API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        window.print();
+        showToast('Turno cerrado correctamente', 'success');
+        activeShift = null;
+        renderClosedShiftUI();
+      } catch (err) {
+        showToast('Error al cerrar turno', 'error');
+      }
+    }
+  </script>
+</body>
+</html>
