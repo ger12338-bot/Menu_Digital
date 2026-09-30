@@ -792,27 +792,52 @@
     let currentMenuState = "ABIERTO";
 
     // ==========================================
-    // WEB BLUETOOTH API - CONFIGURACIÓN TÉRMICA
+    // WEB BLUETOOTH API - DIAGNÓSTICO ABIERTO
     // ==========================================
     let bluetoothDevice = null;
     let printerCharacteristic = null;
 
     async function conectarImpresoraBluetooth() {
+      if (!navigator.bluetooth) {
+        showToast("Tu navegador no soporta Bluetooth Web. Usa Google Chrome.", "error");
+        return;
+      }
+
       try {
-        showToast("Buscando impresora Bluetooth...", "info");
+        showToast("🔍 Buscando dispositivos Bluetooth...", "info");
+        
+        // Ventana abierta sin filtros restrictivos de servicios
         bluetoothDevice = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+          acceptAllDevices: true
         });
 
+        showToast(`Conectando con: ${bluetoothDevice.name || 'Dispositivo'}...`, "info");
+
         const server = await bluetoothDevice.gatt.connect();
-        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-        printerCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
         
-        showToast("¡Impresora Bluetooth conectada con éxito!", "success");
+        // Intentar obtener servicio primario genérico de impresora térmica
+        try {
+          const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+          printerCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        } catch (e) {
+          console.warn("Servicio ESC/POS estándar no detectado, usando dispositivo vinculado genérico.");
+        }
+        
+        showToast("¡Dispositivo Bluetooth vinculado con éxito!", "success");
+        
+        const btnBt = document.querySelector('button[onclick="conectarImpresoraBluetooth()"]');
+        if(btnBt) {
+          btnBt.style.background = "var(--success)";
+          btnBt.innerText = "✅ BT Conectado";
+        }
+
       } catch (error) {
         console.error("Error al conectar:", error);
-        showToast("No se pudo conectar a la impresora.", "error");
+        if (error.name === 'NotFoundError') {
+          showToast("Ventana cancelada o ningún dispositivo seleccionado.", "info");
+        } else {
+          showToast("Error de navegador: " + error.message, "error");
+        }
       }
     }
 
@@ -1682,11 +1707,10 @@
     cancelKitchenComanda = function() { proceedToTicketModal(); };
     
     // ========================================================
-    // IMPRESIÓN DIRECTA SILENCIOSA POR BLUETOOTH (REEMPLAZA VENTANA)
+    // IMPRESIÓN DIRECTA SILENCIOSA POR BLUETOOTH
     // ========================================================
     printClientTicket = async function() {
       if (!printerCharacteristic) {
-        // Respaldo de seguridad si no está conectado el Bluetooth: usa la impresión tradicional
         document.body.classList.add('printing-ticket');
         window.print();
         document.body.classList.remove('printing-ticket');
@@ -1749,7 +1773,7 @@
 
         comandos += '--------------------------------\n';
 
-        // --- TOTALES ALINEADOS A LA DERECHA ---
+        // --- TOTALES ---
         comandos += '\x1B\x61\x02'; // Derecha
         const shippingRow = document.getElementById('t-shipping-row');
         if (shippingRow && shippingRow.style.display !== 'none') {
@@ -1781,7 +1805,7 @@
         // --- PIE Y CORTE DE PAPEL ---
         comandos += '\x1B\x61\x01'; // Centrar
         comandos += '\n¡Gracias por su compra!\n\n\n';
-        comandos += '\x1D\x56\x41\x03'; // Comando ESC/POS corte automático
+        comandos += '\x1D\x56\x41\x03'; // Corte automático ESC/POS
 
         const bytes = encoder.encode(comandos);
         await printerCharacteristic.writeValue(bytes);
