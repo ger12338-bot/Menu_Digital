@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS Pro - Configuración del Negocio</title>
+  <style>
+    :root {
+      --primary: #ff4757;
+      --primary-hover: #ff6b81;
+      --bg-dark: #0f172a;
+      --bg-card: #ffffff;
+      --bg-light: #f8fafc;
+      --text-dark: #1e293b;
+      --text-light: #f8fafc;
+      --border-color: #e2e8f0;
+      --accent: #0d9488;
+      --accent-hover: #0f766e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --success: #10b981;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f1f5f9; color: var(--text-dark); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ======================================================== */
+    /* RETROALIMENTACIÓN TÁCTIL Y ANIMACIONES                   */
+    /* ======================================================== */
+    button, .nav-tab, .btn-header-action {
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    button:active, .btn-header-action:active {
+      transform: scale(0.97) !important;
+      filter: brightness(0.9) !important;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin-icon { display: inline-block; animation: spin 0.8s linear infinite; }
+
+    /* ======================================================== */
+    /* HEADER ESTRUCTURADO UNIFICADO                            */
+    /* ======================================================== */
+    header {
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 10;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      gap: 12px;
+    }
+
+    .header-brand-zone { display: flex; align-items: center; gap: 12px; }
+    .brand-logo h2 { font-size: 1.15rem; font-weight: 800; color: #ffffff; letter-spacing: -0.3px; white-space: nowrap; }
+
+    .header-nav-zone {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 4px;
+      overflow-x: auto;
+    }
+
+    .nav-tab {
+      color: #94a3b8;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.82rem;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .nav-tab:hover { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
+    .nav-tab.active { background: var(--primary); color: #ffffff; box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4); }
+
+    .header-actions-zone { display: flex; align-items: center; gap: 10px; }
+    .header-clock {
+      background: rgba(0, 0, 0, 0.25);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      white-space: nowrap;
+    }
+
+    /* ======================================================== */
+    /* CONTENEDOR PRINCIPAL DE CONFIGURACIÓN                    */
+    /* ======================================================== */
+    .config-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px;
+      overflow-y: auto;
+      background-color: #f8fafc;
+    }
+
+    .config-wrapper {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding-bottom: 40px;
+    }
+
+    .config-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .config-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+    .config-card-header .icon-box {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    }
+    .config-card-header h3 { font-size: 1.05rem; font-weight: 800; color: var(--text-dark); }
+    .config-card-header p { font-size: 0.78rem; color: #64748b; font-weight: 500; margin-top: 2px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full-width { grid-column: span 2; }
+
+    .form-group label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-control {
+      padding: 11px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      outline: none;
+      background: #fff;
+      color: var(--text-dark);
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .form-control:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+    }
+
+    /* BARRA DE ACCIONES FLOTANTE / INFERIOR */
+    .config-footer-actions {
+      display: flex;
+      gap: 12px;
+      background: #ffffff;
+      padding: 16px 24px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .btn-main {
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid var(--border-color);
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-danger-outline {
+      background: #fff5f5;
+      color: var(--danger);
+      border: 1px solid #fed7d7;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .tools-group { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* TOAST NOTIFICACIONES */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 2000;
+    }
+    .toast {
+      min-width: 260px;
+      padding: 14px 20px;
+      border-radius: var(--radius-sm);
+      background: #1e293b;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: var(--shadow-lg);
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1), fadeOut 0.4s ease 2.6s forwards;
+    }
+    .toast.error { background: var(--danger); }
+    .toast.success { background: var(--success); }
+    .toast.info { background: #0284c7; }
+
+    @keyframes slideIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateY(6px); } }
+
+    @media (max-width: 768px) {
+      body { height: auto; overflow-y: auto; }
+      header { flex-wrap: wrap; }
+      .header-brand-zone, .header-actions-zone { width: 100%; justify-content: space-between; }
+      .header-nav-zone { width: 100%; justify-content: flex-start; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full-width { grid-column: span 1; }
+      .config-footer-actions { flex-direction: column; gap: 10px; }
+      .tools-group { width: 100%; justify-content: space-between; }
+      .btn-main, .btn-secondary { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-brand-zone">
+      <div class="brand-logo">
+        <h2>⚡ POS Pro</h2>
+      </div>
+    </div>
+
+    <nav class="header-nav-zone">
+      <a href="pv.html" class="nav-tab">🛒 POS</a>
+      <a href="caja.html" class="nav-tab">💵 Caja</a>
+      <a href="ventas.html" class="nav-tab">📋 Historial</a>
+      <a href="productos.html" class="nav-tab">📦 Productos</a>
+      <a href="config.html" class="nav-tab active">⚙️ Configuración</a>
+    </nav>
+
+    <div class="header-actions-zone">
+      <div id="current-time" class="header-clock">--:--:--</div>
+    </div>
+  </header>
+
+  <div class="config-container">
+    <div class="config-wrapper">
+      
+      <!-- TARJETA 1: DATOS GENERALES Y TICKET -->
+      <div class="config-card">
+        <div class="config-card-header">
+          <div class="icon-box">🧾</div>
+          <div>
+            <h3>Identificación y Comprobantes</h3>
+            <p>Textos principales que aparecerán en los tickets impresos de caja y ventas.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label>Nombre del Negocio / Título Principal</label>
+            <input type="text" id="cfg-nombre" class="form-control" placeholder="Ej: TAQUERÍA LOS PRIMOS">
+          </div>
+          <div class="form-group full-width">
+            <label>Subtítulo o Eslogan (Encabezado del Ticket)</label>
+            <input type="text" id="cfg-subtitulo" class="form-control" placeholder="Ej: Especialidad en Tacos y Papas">
+          </div>
+          <div class="form-group">
+            <label>Teléfono de Contacto</label>
+            <input type="text" id="cfg-telefono" class="form-control" placeholder="Ej: 555-123-4567">
+          </div>
+          <div class="form-group">
+            <label>Sucursal / Dirección Corta</label>
+            <input type="text" id="cfg-direccion" class="form-control" placeholder="Ej: Sucursal Centro">
+          </div>
+          <div class="form-group full-width">
+            <label>Mensaje de Pie de Página (Ticket)</label>
+            <input type="text" id="cfg-pie" class="form-control" placeholder="Ej: ¡Gracias por su preferencia! Vuelva pronto.">
+          </div>
+        </div>
+      </div>
+
+      <!-- TARJETA 2: DATOS FISCALES Y OPERACIÓN -->
+      <div class="config-card">
+        <div class="config-card-header">
+          <div class="icon-box" style="background: #fef3c7; color: #d97706;">💼</div>
+          <div>
+            <h3>Datos Fiscales y Parámetros de Caja</h3>
+            <p>Configuración auxiliar para operaciones financieras y control interno.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>RFC / Identificación Fiscal</label>
+            <input type="text" id="cfg-rfc" class="form-control" placeholder="Ej: XAXX010101000">
+          </div>
+          <div class="form-group">
+            <label>Fondo de Caja Predeterminado ($)</label>
+            <input type="number" id="cfg-fondo" class="form-control" placeholder="300" min="0">
+          </div>
+          <div class="form-group full-width">
+            <label>Nota / Indicación por Defecto para Cocina</label>
+            <input type="text" id="cfg-nota-cocina" class="form-control" placeholder="Ej: Revisar complementos antes de despachar">
+          </div>
+        </div>
+      </div>
+
+      <!-- TARJETA 3: HERRAMIENTAS Y RESPALDOS -->
+      <div class="config-card">
+        <div class="config-card-header">
+          <div class="icon-box" style="background: #f3e8ff; color: #9333ea;">💾</div>
+          <div>
+            <h3>Respaldo y Datos del Sistema</h3>
+            <p>Exporta o importa tus ajustes en un archivo JSON para mayor seguridad.</p>
+          </div>
+        </div>
+        <div class="tools-group">
+          <button class="btn-secondary" onclick="exportConfigJson()">📥 Exportar Configuración</button>
+          <button class="btn-secondary" onclick="document.getElementById('import-file').click()">📤 Importar Configuración</button>
+          <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importConfigJson(event)">
+        </div>
+      </div>
+
+      <!-- BARRA DE ACCIONES INFERIOR -->
+      <div class="config-footer-actions">
+        <button class="btn-danger-outline" onclick="resetFactoryConfig()">Restaurar Valores</button>
+        <button class="btn-main" onclick="saveConfigData()">💾 Guardar Cambios</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadConfigData();
+      updateClock();
+      setInterval(updateClock, 1000);
+    });
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerText = message;
+      container.appendChild(toast);
+      setTimeout(() => { toast.remove(); }, 3000);
+    }
+
+    function updateClock() {
+      document.getElementById('current-time').innerText = new Date().toLocaleTimeString();
+    }
+
+    const DEFAULT_CONFIG = {
+      nombre: "TAQUERÍA / RESTAURANTE",
+      subtitulo: "Comprobante de Venta",
+      telefono: "555-000-0000",
+      direccion: "Sucursal Principal",
+      pie: "¡Gracias por su compra!",
+      rfc: "",
+      fondo: 300,
+      notaCocina: ""
+    };
+
+    function loadConfigData() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('pos_negocio_config')) || DEFAULT_CONFIG;
+        document.getElementById('cfg-nombre').value = saved.nombre || DEFAULT_CONFIG.nombre;
+        document.getElementById('cfg-subtitulo').value = saved.subtitulo || DEFAULT_CONFIG.subtitulo;
+        document.getElementById('cfg-telefono').value = saved.telefono || DEFAULT_CONFIG.telefono;
+        document.getElementById('cfg-direccion').value = saved.direccion || DEFAULT_CONFIG.direccion;
+        document.getElementById('cfg-pie').value = saved.pie || DEFAULT_CONFIG.pie;
+        document.getElementById('cfg-rfc').value = saved.rfc || DEFAULT_CONFIG.rfc;
+        document.getElementById('cfg-fondo').value = saved.fondo !== undefined ? saved.fondo : DEFAULT_CONFIG.fondo;
+        document.getElementById('cfg-nota-cocina').value = saved.notaCocina || DEFAULT_CONFIG.notaCocina;
+        showToast('Configuración cargada correctamente', 'success');
+      } catch (err) {
+        console.error("Error al cargar configuración", err);
+        showToast('Error al leer la configuración guardada', 'error');
+      }
+    }
+
+    function saveConfigData() {
+      const configData = {
+        nombre: document.getElementById('cfg-nombre').value.trim() || DEFAULT_CONFIG.nombre,
+        subtitulo: document.getElementById('cfg-subtitulo').value.trim() || DEFAULT_CONFIG.subtitulo,
+        telefono: document.getElementById('cfg-telefono').value.trim() || DEFAULT_CONFIG.telefono,
+        direccion: document.getElementById('cfg-direccion').value.trim() || DEFAULT_CONFIG.direccion,
+        pie: document.getElementById('cfg-pie').value.trim() || DEFAULT_CONFIG.pie,
+        rfc: document.getElementById('cfg-rfc').value.trim(),
+        fondo: parseFloat(document.getElementById('cfg-fondo').value) || 300,
+        notaCocina: document.getElementById('cfg-nota-cocina').value.trim()
+      };
+
+      try {
+        localStorage.setItem('pos_negocio_config', JSON.stringify(configData));
+        showToast('¡Configuración guardada con éxito!', 'success');
+      } catch (err) {
+        console.error("Error al guardar configuración", err);
+        showToast('Error al guardar en el navegador', 'error');
+      }
+    }
+
+    function resetFactoryConfig() {
+      if (confirm('¿Estás seguro de restablecer los valores predeterminados?')) {
+        localStorage.setItem('pos_negocio_config', JSON.stringify(DEFAULT_CONFIG));
+        loadConfigData();
+        showToast('Valores restaurados a fábrica', 'info');
+      }
+    }
+
+    function exportConfigJson() {
+      const data = localStorage.getItem('pos_negocio_config') || JSON.stringify(DEFAULT_CONFIG);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `config_pos_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Configuración exportada con éxito', 'success');
+    }
+
+    function importConfigJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          localStorage.setItem('pos_negocio_config', JSON.stringify(parsed));
+          loadConfigData();
+          showToast('Configuración importada correctamente', 'success');
+        } catch (err) {
+          showToast('El archivo JSON no es válido', 'error');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+  </script>
+</body>
+</html>
