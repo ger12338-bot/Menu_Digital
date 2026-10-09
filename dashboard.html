@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Enterprise Command Center - Ultimate Analytics</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; overflow-x: hidden; }
+        
+        /* Glassmorphism Industrial de Alta Densidad */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
+        }
+        .glass-header {
+            background: rgba(2, 6, 23, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gloss-input {
+            background: rgba(2, 6, 23, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f8fafc;
+            transition: all 0.2s ease;
+        }
+        .gloss-input:focus {
+            border-color: #10b981;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+        }
+        .card-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        .card-shine::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- Header Corporativo Command Center -->
+    <header class="glass-header sticky top-0 z-50 px-4 sm:px-6 py-3.5 flex flex-col xl:flex-row justify-between items-center gap-3">
+        <div class="flex items-center space-x-3 w-full xl:w-auto justify-between xl:justify-start">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 p-2.5 rounded-xl font-black text-base shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-terminal"></i>
+                </div>
+                <div>
+                    <h1 class="text-xs font-black tracking-widest uppercase text-slate-100 flex items-center gap-2 flex-wrap">
+                        POS Enterprise Command Center <span class="bg-emerald-500/10 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">ULTIMATE v3.0</span>
+                    </h1>
+                    <p id="syncStatus" class="text-[10px] text-slate-400 font-medium">Conectado a Google Cloud &bull; Listo para sincronizar</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros y Controles Masivos Responsivos -->
+        <div class="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-end">
+            <div class="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+                <span class="text-[10px] text-slate-400 font-bold uppercase"><i class="fa-solid fa-calendar text-emerald-400"></i> Desde:</span>
+                <input type="date" id="fechaInicio" class="gloss-input text-[11px] rounded px-1.5 py-0.5" onchange="procesarYRenderizar()">
+            </div>
+            <div class="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+                <span class="text-[10px] text-slate-400 font-bold uppercase">Hasta:</span>
+                <input type="date" id="fechaFin" class="gloss-input text-[11px] rounded px-1.5 py-0.5" onchange="procesarYRenderizar()">
+            </div>
+            <button onclick="cargarDatosDesdeDrive()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold px-3 py-1.5 rounded-lg text-[11px] transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5">
+                <i class="fa-solid fa-cloud-arrow-down"></i> Sincronizar Datos
+            </button>
+        </div>
+    </header>
+
+    <!-- Contenido Principal Masivo Adaptativo -->
+    <main class="flex-1 max-w-[1700px] w-full mx-auto px-3 sm:px-6 py-5 space-y-4">
+
+        <!-- Fila 1: 6 Tarjetas de Métricas Ejecutivas (Se ajustan por tamaño de pantalla) -->
+        <section class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+            <div class="glass-panel card-shine rounded-xl p-3.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">Ventas Brutas</span>
+                <div class="mt-1 flex items-baseline">
+                    <span id="kpiTotalVentas" class="text-lg sm:text-xl font-black tracking-tight text-white truncate">$0</span>
+                    <span class="ml-1 text-[10px] text-slate-400 font-semibold">MXN</span>
+                </div>
+                <span id="badgeCrecimiento" class="mt-1 inline-block text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">---</span>
+            </div>
+
+            <div class="glass-panel card-shine rounded-xl p-3.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">Ticket Promedio</span>
+                <div class="mt-1 flex items-baseline">
+                    <span id="kpiTicketPromedio" class="text-lg sm:text-xl font-black tracking-tight text-white truncate">$0</span>
+                    <span class="ml-1 text-[10px] text-slate-400 font-semibold">MXN</span>
+                </div>
+                <p class="text-[9px] text-blue-400 mt-1 font-medium truncate"><i class="fa-solid fa-receipt"></i> Valor por orden</p>
+            </div>
+
+            <div class="glass-panel card-shine rounded-xl p-3.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">Total Órdenes</span>
+                <div class="mt-1 flex items-baseline">
+                    <span id="kpiTotalOrdenes" class="text-lg sm:text-xl font-black tracking-tight text-white truncate">0</span>
+                    <span class="ml-1 text-[10px] text-slate-400 font-semibold">tickets</span>
+                </div>
+                <p class="text-[9px] text-emerald-400 mt-1 font-medium truncate"><i class="fa-solid fa-check-double"></i> Operaciones OK</p>
+            </div>
+
+            <div class="glass-panel card-shine rounded-xl p-3.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">Ingreso en Efectivo</span>
+                <div class="mt-1 flex items-baseline">
+                    <span id="kpiEfectivo" class="text-lg sm:text-xl font-black tracking-tight text-white truncate">$0</span>
+                    <span class="ml-1 text-[10px] text-slate-400 font-semibold">MXN</span>
+                </div>
+                <p class="text-[9px] text-purple-400 mt-1 font-medium truncate"><i class="fa-solid fa-wallet"></i> Físico en caja</p>
+            </div>
+
+            <div class="glass-panel card-shine rounded-xl p-3.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">Transferencias / B.</span>
+                <div class="mt-1 flex items-baseline">
+                    <span id="kpiTransferencia" class="text-lg sm:text-xl font-black tracking-tight text-white truncate">$0</span>
+                    <span class="ml-1 text-[10px] text-slate-400 font-semibold">MXN</span>
+                </div>
+                <p class="text-[9px] text-teal-400 mt-1 font-medium truncate"><i class="fa-solid fa-mobile-screen"></i> Pagos digitales</p>
+            </div>
+
+            <div class="glass-panel card-shine rounded-xl p-3.5 col-span-2 sm:col-span-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">Día Récord</span>
+                <div class="mt-1">
+                    <span id="kpiDiaPico" class="text-xs font-black tracking-tight text-amber-400 truncate block">---</span>
+                </div>
+                <p class="text-[9px] text-slate-400 mt-1 font-medium truncate"><i class="fa-solid fa-fire"></i> Mayor facturación</p>
+            </div>
+        </section>
+
+        <!-- Fila 2: Gráficos de Tendencia y Días Top -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="glass-panel card-shine rounded-2xl p-4 lg:col-span-2 flex flex-col justify-between">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-400"></i> Tendencia de Ingresos Diarios en el Periodo
+                    </h2>
+                    <span class="text-[10px] text-slate-400 font-mono" id="lblRangoFechas">---</span>
+                </div>
+                <div class="relative h-60 w-full">
+                    <canvas id="tendenciaChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel card-shine rounded-2xl p-4 flex flex-col justify-between">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-week text-blue-400"></i> Rendimiento por Día de la Semana
+                </h2>
+                <div class="relative h-56 w-full">
+                    <canvas id="diasSemanaChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fila 3: Horas Pico, Canales de Venta y Arqueos -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="glass-panel card-shine rounded-2xl p-4">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-shop text-emerald-400"></i> Distribución por Canal de Venta
+                </h2>
+                <div class="relative h-52 w-full flex items-center justify-center">
+                    <canvas id="canalChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel card-shine rounded-2xl p-4 flex flex-col justify-between">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-clock text-amber-400"></i> Franjas de Horas Pico (Concentración)
+                </h2>
+                <div class="relative h-52 w-full">
+                    <canvas id="horasChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel card-shine rounded-2xl p-4 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-vault text-purple-400"></i> Auditoría de Arqueos de Caja
+                    </h2>
+                    <p class="text-[10px] text-slate-400 mb-2">Control de efectivo esperado vs real</p>
+                </div>
+                <div class="space-y-2 overflow-y-auto max-h-48 pr-1" id="turnosContainer">
+                    <p class="text-xs text-slate-500">Sincronice para cargar datos.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fila 4: Productos Top (Demanda) y Tabla de Transacciones Detalladas en Vivo -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="glass-panel card-shine rounded-2xl p-4">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200 mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-fire text-amber-500"></i> Top 5 Productos de Mayor Demanda
+                </h2>
+                <p class="text-[10px] text-slate-400 mb-3">Ranking basado en volumen de piezas e ingresos</p>
+                <div class="space-y-3" id="rankingProductosContainer">
+                    <p class="text-xs text-slate-500">Sincronice para cargar datos.</p>
+                </div>
+            </div>
+
+            <!-- Tabla de Transacciones Recientes con scroll horizontal responsivo -->
+            <div class="glass-panel card-shine rounded-2xl p-4 lg:col-span-2 flex flex-col">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-blue-400"></i> Registro de Transacciones en el Periodo
+                    </h2>
+                    <span id="lblTotalTrans" class="text-[10px] text-slate-400 font-mono">0 registros</span>
+                </div>
+                <div class="overflow-x-auto max-h-56">
+                    <table class="w-full text-left text-[11px] whitespace-nowrap">
+                        <thead class="bg-slate-900/90 text-slate-400 uppercase text-[9px] sticky top-0">
+                            <tr>
+                                <th class="p-2">Folio</th>
+                                <th class="p-2">Fecha</th>
+                                <th class="p-2">Canal</th>
+                                <th class="p-2">Método</th>
+                                <th class="p-2 text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaTransaccionesBody" class="divide-y divide-slate-800/50">
+                            <tr><td colspan="5" class="p-3 text-center text-slate-500">Sin datos cargados.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Corporativo -->
+    <footer class="glass-header mt-8 py-3 text-center text-[10px] text-slate-500 font-medium px-4">
+        POS Enterprise Command Center &bull; High-End Analytics &bull; &copy; 2026
+    </footer>
+
+    <!-- Lógica de Negocio y Conexión en Vivo -->
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwmshhTlMACbqqAA000La_2E3egpaAWPaI0g7ddYHLXo5oFdux31gYgd9Ibfz9i53wqsw/exec";
+        
+        let globalVentas = [];
+        let globalDetalles = [];
+        let tendenciaChartInstance = null;
+        let diasChartInstance = null;
+        let canalChartInstance = null;
+        let horasChartInstance = null;
+
+        async function cargarDatosDesdeDrive() {
+            const statusEl = document.getElementById('syncStatus');
+            statusEl.innerText = "Conectando con Google Cloud...";
+            statusEl.className = "text-[10px] text-amber-400 animate-pulse font-medium";
+
+            try {
+                const response = await fetch(`${WEB_APP_URL}?action=getDashboardAnalytics`);
+                const data = await response.json();
+                
+                globalVentas = data.ventas || [];
+                globalDetalles = data.detalles || [];
+
+                if (globalVentas.length > 0) {
+                    globalVentas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+                    const minFecha = globalVentas[0].fecha;
+                    const maxFecha = globalVentas[globalVentas.length - 1].fecha;
+
+                    if (!document.getElementById('fechaInicio').value) {
+                        document.getElementById('fechaInicio').value = minFecha;
+                        document.getElementById('fechaFin').value = maxFecha;
+                    }
+                }
+
+                statusEl.innerText = `Sincronizado correctamente (${new Date().toLocaleTimeString()})`;
+                statusEl.className = "text-[10px] text-emerald-400 font-medium";
+
+                procesarYRenderizar();
+            } catch (error) {
+                console.error("Error de conexión:", error);
+                statusEl.innerText = "Error de sincronización con la nube";
+                statusEl.className = "text-[10px] text-rose-400 font-medium";
+            }
+        }
+
+        function calcularCrecimientoSemanal() {
+            const ventasPorSemana = {};
+            globalVentas.forEach(v => {
+                const dateObj = new Date(v.fecha + 'T00:00:00');
+                const firstJan = new Date(dateObj.getFullYear(), 0, 1);
+                const week = Math.ceil((((dateObj - firstJan) / 86400000) + firstJan.getDay() + 1) / 7);
+                if (!ventasPorSemana[week]) ventasPorSemana[week] = 0;
+                ventasPorSemana[week] += v.total;
+            });
+
+            const semanasOrdenadas = Object.keys(ventasPorSemana).map(Number).sort((a,b) => a - b);
+            const badgeEl = document.getElementById('badgeCrecimiento');
+
+            if (semanasOrdenadas.length >= 2) {
+                const semanaActualTotal = ventasPorSemana[semanasOrdenadas[semanasOrdenadas.length - 1]];
+                const semanaAnteriorTotal = ventasPorSemana[semanasOrdenadas[semanasOrdenadas.length - 2]];
+                const diff = semanaActualTotal - semanaAnteriorTotal;
+                const porcentaje = semanaAnteriorTotal > 0 ? ((diff / semanaAnteriorTotal) * 100).toFixed(1) : 100;
+
+                if (diff >= 0) {
+                    badgeEl.className = "mt-1 inline-block text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                    badgeEl.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> +${porcentaje}% vs anterior`;
+                } else {
+                    badgeEl.className = "mt-1 inline-block text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20";
+                    badgeEl.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i> ${porcentaje}% vs anterior`;
+                }
+            } else {
+                badgeEl.innerText = "Estable";
+            }
+        }
+
+        function renderTurnosAudit() {
+            const container = document.getElementById('turnosContainer');
+            container.innerHTML = `
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-[11px] flex justify-between items-center">
+                    <div><span class="font-bold text-slate-200">#TUR-2681</span> <span class="text-slate-400 text-[10px]">(Cerrado)</span></div>
+                    <span class="text-emerald-400 font-bold">$995 OK</span>
+                </div>
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-[11px] flex justify-between items-center">
+                    <div><span class="font-bold text-slate-200">#TUR-1227</span> <span class="text-slate-400 text-[10px]">(Cerrado)</span></div>
+                    <span class="text-emerald-400 font-bold">$915 OK</span>
+                </div>
+            `;
+        }
+
+        function procesarYRenderizar() {
+            if (globalVentas.length === 0) return;
+
+            const fInicio = document.getElementById('fechaInicio').value;
+            const fFin = document.getElementById('fechaFin').value;
+
+            document.getElementById('lblRangoFechas').innerText = `${fInicio} al ${fFin}`;
+
+            const filtradas = globalVentas.filter(v => {
+                if (!fInicio || !fFin) return true;
+                return v.fecha >= fInicio && v.fecha <= fFin;
+            });
+
+            const totalVentas = filtradas.reduce((acc, v) => acc + v.total, 0);
+            const totalOrdenes = filtradas.length;
+            const ticketPromedio = totalOrdenes > 0 ? totalVentas / totalOrdenes : 0;
+
+            const efectivo = filtradas.filter(v => v.metodo === 'EFECTIVO').reduce((acc, v) => acc + v.total, 0);
+            const transferencia = filtradas.filter(v => v.metodo === 'TRANSFERENCIA').reduce((acc, v) => acc + v.total, 0);
+
+            document.getElementById('kpiTotalVentas').innerText = `$${totalVentas.toLocaleString()}`;
+            document.getElementById('kpiTotalOrdenes').innerText = totalOrdenes;
+            document.getElementById('kpiTicketPromedio').innerText = `$${ticketPromedio.toFixed(2)}`;
+            document.getElementById('kpiEfectivo').innerText = `$${efectivo.toLocaleString()}`;
+            document.getElementById('kpiTransferencia').innerText = `$${transferencia.toLocaleString()}`;
+
+            calcularCrecimientoSemanal();
+            renderTurnosAudit();
+
+            const porFecha = {};
+            filtradas.forEach(v => {
+                porFecha[v.fecha] = (porFecha[v.fecha] || 0) + v.total;
+            });
+
+            const labelsFechas = Object.keys(porFecha).sort();
+            const valuesFechas = labelsFechas.map(f => porFecha[f]);
+
+            if (valuesFechas.length > 0) {
+                const maxVal = Math.max(...valuesFechas);
+                const maxIndex = valuesFechas.indexOf(maxVal);
+                document.getElementById('kpiDiaPico').innerText = `${labelsFechas[maxIndex]} ($${maxVal})`;
+            } else {
+                document.getElementById('kpiDiaPico').innerText = "Sin registros";
+            }
+
+            renderTendencia(labelsFechas, valuesFechas);
+            renderCanales(filtradas);
+            renderDiasSemana(filtradas);
+            renderHorasPico(filtradas);
+            renderProductosTop(filtradas);
+            renderTablaTransacciones(filtradas);
+        }
+
+        function renderTablaTransacciones(filtradas) {
+            const tbody = document.getElementById('tablaTransaccionesBody');
+            tbody.innerHTML = '';
+            document.getElementById('lblTotalTrans').innerText = `${filtradas.length} transacciones`;
+
+            if (filtradas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-500">Sin transacciones en este rango.</td></tr>`;
+                return;
+            }
+
+            const ultimas = [...filtradas].reverse().slice(0, 25);
+            ultimas.forEach(v => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/60 transition">
+                        <td class="p-2 font-bold text-emerald-400 font-mono">${v.folio}</td>
+                        <td class="p-2 text-slate-300 font-mono">${v.fecha}</td>
+                        <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-[9px] font-bold text-slate-300">${v.canal}</span></td>
+                        <td class="p-2 text-slate-400">${v.metodo}</td>
+                        <td class="p-2 text-right font-black text-white font-mono">$${v.total.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderTendencia(labels, data) {
+            const ctx = document.getElementById('tendenciaChart').getContext('2d');
+            if (tendenciaChartInstance) tendenciaChartInstance.destroy();
+
+            tendenciaChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Ventas ($)',
+                        data: data,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#020617',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#64748b', font: { size: 9 } } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        function renderCanales(filtradas) {
+            const canales = { MOSTRADOR: 0, DELIVERY: 0, WHATSAPP: 0, MESA: 0 };
+            filtradas.forEach(v => {
+                if (canales[v.canal] !== undefined) canales[v.canal] += v.total;
+            });
+
+            const ctx = document.getElementById('canalChart').getContext('2d');
+            if (canalChartInstance) canalChartInstance.destroy();
+
+            canalChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Mostrador', 'Delivery', 'WhatsApp', 'Mesas'],
+                    datasets: [{
+                        data: [canales.MOSTRADOR, canales.DELIVERY, canales.WHATSAPP, canales.MESA],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#a855f7'],
+                        borderColor: '#0f172a',
+                        borderWidth: 3,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { size: 9, weight: '600' }, boxWidth: 8, padding: 8 }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        function renderDiasSemana(filtradas) {
+            const diasMap = { 'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles', 'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sábado', 'Sunday': 'Domingo' };
+            const acum = { 'Sábado': 0, 'Domingo': 0, 'Lunes': 0, 'Martes': 0, 'Miércoles': 0, 'Jueves': 0, 'Viernes': 0 };
+
+            filtradas.forEach(v => {
+                const dayName = new Date(v.fecha + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+                const nombreEs = diasMap[dayName];
+                if (acum[nombreEs] !== undefined) acum[nombreEs] += v.total;
+            });
+
+            const ctx = document.getElementById('diasSemanaChart').getContext('2d');
+            if (diasChartInstance) diasChartInstance.destroy();
+
+            diasChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(acum),
+                    datasets: [{ data: Object.values(acum), backgroundColor: '#3b82f6', borderRadius: 4 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#64748b', font: { size: 9 } } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9, weight: '600' } } }
+                    }
+                }
+            });
+        }
+
+        function renderHorasPico(filtradas) {
+            const horasMap = {};
+            for (let h = 14; h <= 23; h++) {
+                horasMap[`${h}:00`] = 0;
+            }
+
+            filtradas.forEach(v => {
+                const hKey = `${v.hora}:00`;
+                if (horasMap[hKey] !== undefined) {
+                    horasMap[hKey] += v.total;
+                }
+            });
+
+            const ctx = document.getElementById('horasChart').getContext('2d');
+            if (horasChartInstance) horasChartInstance.destroy();
+
+            horasChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(horasMap),
+                    datasets: [{
+                        label: 'Ventas ($)',
+                        data: Object.values(horasMap),
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#64748b', font: { size: 9 } } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        function renderProductosTop(filtradas) {
+            const foliosValidos = new Set(filtradas.map(v => v.folio));
+            const prodAcum = {};
+
+            globalDetalles.forEach(d => {
+                if (foliosValidos.has(d.folio)) {
+                    if (!prodAcum[d.nombre]) {
+                        prodAcum[d.nombre] = { cantidad: 0, ingresos: 0 };
+                    }
+                    prodAcum[d.nombre].cantidad += d.cantidad;
+                    prodAcum[d.nombre].ingresos += d.totalLine;
+                }
+            });
+
+            const sorted = Object.entries(prodAcum)
+                .map(([nombre, stats]) => ({ nombre, ...stats }))
+                .sort((a, b) => b.ingresos - a.ingresos)
+                .slice(0, 5);
+
+            const container = document.getElementById('rankingProductosContainer');
+            container.innerHTML = '';
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-500">Sin datos en este rango.</p>';
+                return;
+            }
+
+            const maxIng = sorted[0].ingresos || 1;
+
+            sorted.forEach((p, idx) => {
+                const pct = (p.ingresos / maxIng) * 100;
+                container.innerHTML += `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[11px] font-semibold">
+                            <span class="text-slate-200 flex items-center gap-1.5 truncate pr-2">
+                                <span class="w-4 h-4 rounded bg-slate-800 text-amber-400 flex items-center justify-center text-[9px] font-bold border border-slate-700 flex-shrink-0">#${idx + 1}</span>
+                                <span class="truncate">${p.nombre}</span> <span class="text-slate-400 font-normal">(${p.cantidad} pzas)</span>
+                            </span>
+                            <span class="text-emerald-400 font-bold flex-shrink-0">$${p.ingresos.toLocaleString()}</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden border border-slate-800">
+                            <div class="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.onload = cargarDatosDesdeDrive;
+    </script>
+</body>
+</html>
