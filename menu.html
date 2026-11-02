@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1015">
+<title>Pedidos a domicilio</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#c5a059;--gold2:#dfc285;--bg:#0f1015;--card:#181920;--card2:#1f2029;--line:#2a2b34;--text:#f4f4f5;--muted:#a1a1aa;--red:#dc2626;--ok:#34d399;--r:16px;--sans:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--serif:'Playfair Display',Georgia,serif}
+*{box-sizing:border-box;margin:0}html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;border:0;color:inherit;background:none}input,textarea{font:inherit;color:var(--text)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+.hidden{display:none!important}
+/* Encabezado */
+header{text-align:center;padding:calc(34px + env(safe-area-inset-top,0px)) 20px 26px;background:radial-gradient(120% 100% at 50% 0,#2a2210 0,var(--bg) 70%);border-bottom:1px solid var(--line)}
+.logo{width:84px;height:84px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;font:700 1.9rem var(--serif);color:var(--bg);background:linear-gradient(145deg,var(--gold2),var(--gold));box-shadow:0 8px 30px rgba(197,160,89,.35)}
+h1{font:700 1.9rem/1.1 var(--serif);letter-spacing:-.01em}h1 span{display:block;font-size:1rem;letter-spacing:.35em;color:var(--gold);margin-top:6px;font-family:var(--sans);font-weight:700}
+.tag{color:var(--muted);margin:10px auto 0;max-width:34ch;font-style:italic}
+.facts{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px}
+.fact{padding:7px 13px;border:1px solid var(--line);border-radius:99px;font-size:.82rem;font-weight:600;color:var(--gold2);background:rgba(255,255,255,.03)}
+.closed{background:var(--red);text-align:center;padding:13px 16px;font-weight:700}
+/* Navegación */
+.nav{position:sticky;top:0;z-index:20;background:rgba(15,16,21,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:10px 14px 0}
+.search{position:relative;max-width:900px;margin:0 auto 10px}.search input{width:100%;padding:13px 14px 13px 42px;border-radius:12px;border:1px solid var(--line);background:var(--card)}
+.search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-style:normal;opacity:.6}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px;max-width:900px;margin:0 auto}.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:9px 16px;border-radius:99px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:.88rem;white-space:nowrap}
+.chip.on{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+/* Menú */
+main{max-width:900px;margin:0 auto;padding:6px 14px 20px}
+section{scroll-margin-top:118px}
+h2{font:600 1.45rem var(--serif);color:var(--gold2);margin:26px 0 12px;display:flex;align-items:center;gap:10px}h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.grid{display:grid;gap:12px}@media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+.item{display:grid;grid-template-columns:1fr 104px;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;transition:border-color .2s}
+.item:hover{border-color:#3a3b46}.item h3{font-size:1rem;line-height:1.25}.item p{color:var(--muted);font-size:.83rem;margin:5px 0 8px;line-height:1.4}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.price{font-weight:800;color:var(--gold2)}
+.tg{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--card2);color:var(--muted)}
+.art{position:relative;border-radius:12px;background:linear-gradient(150deg,#2b2417,#17181f);display:grid;place-items:center;font-size:2.6rem;min-height:104px}
+.art em{position:absolute;top:6px;left:6px;font-style:normal;font-size:.62rem;font-weight:800;background:var(--gold);color:var(--bg);padding:2px 7px;border-radius:6px}
+.ctl{position:absolute;right:6px;bottom:6px}
+.add{width:44px;height:44px;border-radius:50%;background:var(--gold);color:var(--bg);font-size:1.5rem;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.step{display:flex;align-items:center;background:var(--bg);border:1px solid var(--gold);border-radius:99px;padding:2px}.step button{width:38px;height:38px;font-size:1.2rem;font-weight:700;color:var(--gold2)}.step b{min-width:22px;text-align:center}
+.item.out{opacity:.5}.item.out .art::after{content:"Agotado";position:absolute;inset:auto 6px 6px;text-align:center;font-size:.72rem;font-weight:800;background:#27272a;border-radius:8px;padding:5px}
+.empty{text-align:center;color:var(--muted);padding:40px 0}
+/* Barra del carrito */
+.bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(560px,calc(100% - 24px));z-index:30;display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-radius:16px;background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--bg);font-weight:800;box-shadow:0 12px 34px rgba(0,0,0,.55)}
+.bar span.n{background:var(--bg);color:var(--gold2);border-radius:99px;padding:2px 10px;margin-right:10px;font-size:.85rem}
+/* Hoja de pedido */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}.ov.on{opacity:1;pointer-events:auto}
+.sheet{background:var(--bg);width:min(560px,100%);max-height:94vh;border-radius:22px 22px 0 0;border:1px solid var(--line);display:flex;flex-direction:column;transform:translateY(30px);transition:transform .3s}.ov.on .sheet{transform:none}
+.sh{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}.sh h3{font:600 1.35rem var(--serif)}.x{width:40px;height:40px;border-radius:50%;background:var(--card);font-size:1.3rem}
+.sb{overflow:auto;padding:14px 18px;flex:1}.blk{margin-bottom:20px}.blk>h4{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.ln{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}.ln small{display:block;color:var(--muted)}
+label{display:block;font-size:.85rem;font-weight:600;margin-bottom:12px}label input,label textarea{display:block;width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-weight:400}
+.gps{width:100%;padding:13px;border-radius:12px;border:1px dashed var(--gold);color:var(--gold2);font-weight:700;background:rgba(197,160,89,.07)}.gps:disabled{opacity:.6}
+.st{font-size:.85rem;margin-top:8px;min-height:20px}.st.ok{color:var(--ok)}.st.bad{color:#f87171}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.seg button{padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-weight:700}.seg button.on{border-color:var(--gold);color:var(--gold2);background:rgba(197,160,89,.1)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:.88rem;color:var(--muted)}.box b{color:var(--text)}.cp{margin-top:8px;padding:8px 12px;border-radius:8px;border:1px solid var(--gold);color:var(--gold2);font-weight:700;font-size:.82rem}
+.tot{display:flex;justify-content:space-between;padding:4px 0;color:var(--muted)}.tot.g{color:var(--text);font-size:1.25rem;font-weight:800;border-top:1px solid var(--line);margin-top:6px;padding-top:12px}.tot.g b{color:var(--gold2)}
+.sf{padding:14px 18px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+.go{width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--bg);font-weight:800;font-size:1.02rem}.go:disabled{opacity:.45;cursor:not-allowed}
+.err{color:#f87171;font-size:.85rem;font-weight:600;min-height:20px;margin-bottom:6px}
+/* Confirmación */
+.ok1{text-align:center;padding:10px 0 4px}.ok1 .ic{width:72px;height:72px;margin:0 auto 12px;border-radius:50%;display:grid;place-items:center;font-size:2rem;background:rgba(52,211,153,.14);color:var(--ok)}
+.ok1 h3{font:600 1.5rem var(--serif)}.folio{display:inline-block;margin:8px 0;padding:5px 14px;border-radius:99px;background:var(--card);border:1px solid var(--gold);color:var(--gold2);font-weight:800}
+.trk{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:18px 0;text-align:center}.trk div{font-size:.72rem;color:var(--muted);font-weight:600}.trk div i{display:grid;place-items:center;width:38px;height:38px;margin:0 auto 6px;border-radius:50%;background:var(--card);border:1px solid var(--line);font-style:normal;font-size:1.1rem}
+.trk div.on{color:var(--text)}.trk div.on i{background:var(--gold);border-color:var(--gold)}
+.wa{display:block;text-align:center;margin-top:10px;padding:13px;border-radius:12px;border:1px solid var(--line);font-weight:700;color:var(--text);text-decoration:none}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.seguir{position:fixed;right:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:40;font-size:.8rem;font-weight:800;background:var(--gold);color:var(--bg);border-radius:99px;padding:9px 14px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px}
+.sk{height:96px;border-radius:16px;background:linear-gradient(90deg,var(--card),var(--card2),var(--card));background-size:200% 100%;animation:sk 1.2s infinite;margin-bottom:12px}@keyframes sk{to{background-position:-200% 0}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:#27272a;border:1px solid var(--line);padding:11px 18px;border-radius:12px;z-index:90;font-weight:600;font-size:.88rem;max-width:90%}
+.trk div.now i{animation:pul 1.4s infinite}@keyframes pul{50%{box-shadow:0 0 0 7px rgba(197,160,89,.25)}}
+.call{display:block;text-align:center;margin-top:10px;padding:13px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:700;color:var(--text);text-decoration:none}
+</style>
+</head>
+<body>
+<button class="seguir hidden" id="seguir">📦 Seguir mi pedido</button>
+<div class="closed hidden" id="closed"></div>
+<header>
+  <div class="logo" id="logo">🌮</div>
+  <h1 id="neg">&nbsp;</h1>
+  <p class="tag" id="sub"></p>
+  <div class="facts"><span class="fact">🛵 Entrega a domicilio</span><span class="fact" id="eta">⏱</span><span class="fact" id="fee"></span></div>
+</header>
+<div class="nav"><div class="search"><i>🔍</i><input id="q" type="search" placeholder="Buscar en el menú…" autocomplete="off"></div><div class="chips" id="chips"></div></div>
+<main id="menu"><div class="sk"></div><div class="sk"></div><div class="sk"></div></main>
+<button class="bar hidden" id="bar"><span><span class="n" id="barN">0</span>Ver mi pedido</span><span id="barT">$0.00</span></button>
+
+<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Tu pedido">
+  <div class="sh"><h3 id="shT">Tu pedido</h3><button class="x" id="x" aria-label="Cerrar">×</button></div>
+  <div class="sb" id="sb">
+    <div id="form">
+      <div class="blk"><h4>Tu orden</h4><div id="lines"></div></div>
+      <div class="blk"><h4>Datos de entrega</h4>
+        <label>Nombre<input id="fn" autocomplete="name" maxlength="60" placeholder="¿Quién recibe?"></label>
+        <label>Teléfono (10 dígitos)<input id="fp" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="8112345678"></label>
+        <label>Dirección<input id="fa" autocomplete="street-address" maxlength="160" placeholder="Calle, número y colonia"></label>
+        <label>Referencias (opcional)<input id="fr" maxlength="120" placeholder="Portón negro, entre calles…"></label>
+        <button class="gps" id="gps" type="button">📍 Usar mi ubicación para calcular el envío</button><div class="st" id="gst"></div>
+      </div>
+      <div class="blk"><h4>Forma de pago</h4>
+        <div class="seg"><button class="on" data-p="Efectivo">💵 Efectivo</button><button data-p="Transferencia">🏦 Transferencia</button></div>
+        <div id="pEf"><label>¿Con cuánto pagas? (opcional)<input id="fc" type="number" inputmode="decimal" min="0" placeholder="Ej. 200"></label><div class="st" id="fch"></div></div>
+        <div id="pTr" class="box hidden"></div>
+      </div>
+      <div class="blk"><label>Notas para tu pedido (opcional)<textarea id="fnote" rows="2" maxlength="160" placeholder="Sin cebolla, salsa aparte…"></textarea></label></div>
+      <input class="hp" id="fw" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div id="tots"></div>
+    </div>
+    <div id="done" class="hidden"></div>
+  </div>
+  <div class="sf" id="sf"><div class="err" id="err" role="alert"></div><button class="go" id="go">Confirmar pedido</button></div>
+</div></div>
+
+<script>
+/* ===== Conexión: pega aquí la URL de tu Apps Script (termina en /exec) ===== */
+const API_URL = 'https://script.google.com/macros/s/AKfycbzX8lSpzKW9GOpFuTj6NFUVJ73SgST9Jx2P9GTniYsnIBMtZJ1JHiC91-RLHF6oz7bwjA/exec';
+
+const $ = s => document.querySelector(s), money = n => '$' + Number(n).toFixed(2), esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const LS = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
+let M = null; const S = { cart: LS.get('mn_cart', {}), quote: null, pay: 'Efectivo', busy: false, poll: null, offline: false };
+const emo = n => /taco/i.test(n) ? '🌮' : /quesad/i.test(n) ? '🧀' : /papa/i.test(n) ? '🥔' : /antojit/i.test(n) ? '🌶️' : /especial/i.test(n) ? '⭐' : /postre/i.test(n) ? '🍮' : /bebida|agua|refresc/i.test(n) ? '🥤' : /complement|extra/i.test(n) ? '🍟' : /hambur/i.test(n) ? '🍔' : '🍽️';
+const imgUrl = u => { if (!/^https:\/\//.test(u)) return ''; const m = u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=view&)?id=)([\w-]+)/); return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w400` : u; };
+const toast = m => { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.append(t); setTimeout(() => t.remove(), 3200); };
+async function api(action, data = {}) {
+  const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, ...data }) });
+  const j = await r.json(); if (!j.ok) throw new Error(j.error); return j.data;
+}
+const prod = id => M.prods.find(p => p.id === id);
+const sub = () => Object.entries(S.cart).reduce((t, [id, q]) => t + (prod(id) ? prod(id).p * q : 0), 0);
+const count = () => Object.values(S.cart).reduce((a, b) => a + b, 0);
+const envio = () => S.quote && S.quote.enZona ? S.quote.envio : 0, total = () => sub() + envio();
+const canOrder = () => M && M.abierto && !S.offline;
+const saveCart = () => LS.set('mn_cart', S.cart);
+
+async function loadMenu() {
+  try { const r = await fetch(API_URL + '?action=menu'), j = await r.json(); if (!j.ok) throw 0; M = j.data; LS.set('mn_menu', M); }
+  catch (e) { M = LS.get('mn_menu', null); if (M) { S.offline = true; toast('Sin conexión: mostrando el último menú guardado'); } }
+  if (!M) { $('#menu').innerHTML = '<div class="empty">No pudimos cargar el menú.<br><button class="go" style="max-width:240px;margin-top:14px" onclick="location.reload()">Reintentar</button></div>'; return; }
+  init();
+}
+function init() {
+  document.title = (M.negocio || 'Menú') + ' · Pedidos a domicilio'; $('#neg').textContent = M.negocio || ''; $('#sub').textContent = M.subtitulo || ''; $('#logo').textContent = (M.negocio || '🌮').split(/\s+/).filter(w => /^[A-Za-zÁÉÍÓÚÑ]/.test(w)).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '🌮';
+  $('#eta').textContent = M.eta ? '⏱ ' + M.eta : '⏱ A domicilio'; $('#fee').textContent = M.envio.base ? `Envío desde ${money(M.envio.base)}` : 'Envío a domicilio';
+  const c = $('#closed'); c.classList.toggle('hidden', canOrder()); c.textContent = S.offline ? '📶 Sin conexión. Conéctate para hacer tu pedido.' : '🔴 Por ahora estamos cerrados.' + (M.mensaje ? ' ' + M.mensaje : '');
+  for (const id of Object.keys(S.cart)) if (!prod(id) || prod(id).out) delete S.cart[id]; saveCart();
+  $('#pTr').innerHTML = M.pago.clabe ? `Transfiere el total y envíanos tu comprobante por WhatsApp.<br>${M.pago.banco ? '<b>Banco:</b> ' + esc(M.pago.banco) + '<br>' : ''}${M.pago.titular ? '<b>Titular:</b> ' + esc(M.pago.titular) + '<br>' : ''}<b>CLABE:</b> <span id="clabe">${esc(M.pago.clabe)}</span><br><button class="cp" id="cp" type="button">📋 Copiar CLABE</button>` : 'Pregúntanos los datos de transferencia por WhatsApp.';
+  const cli = LS.get('mn_cli', {}); $('#fn').value = cli.n || ''; $('#fp').value = cli.t || ''; $('#fa').value = cli.d || ''; $('#fr').value = cli.r || '';
+  renderChips(); renderMenu(); renderBar(); resumeOrder();
+}
+function ctl(p) { const q = S.cart[p.id] || 0; if (p.out || !canOrder()) return ''; return q ? `<div class="step"><button data-a="-" data-id="${esc(p.id)}" aria-label="Quitar uno">−</button><b>${q}</b><button data-a="+" data-id="${esc(p.id)}" aria-label="Agregar uno">+</button></div>` : `<button class="add" data-a="+" data-id="${esc(p.id)}" aria-label="Agregar ${esc(p.n)}">+</button>`; }
+function renderMenu() {
+  const t = $('#q').value.trim().toLowerCase(); let h = '';
+  M.cats.forEach(c => { const it = M.prods.filter(p => p.c === c.id && (!t || (p.n + ' ' + p.d).toLowerCase().includes(t))); if (!it.length) return; const e = emo(c.n);
+    h += `<section id="c-${esc(c.id || 'otros')}"><h2>${e} ${esc(c.n)}</h2><div class="grid">${it.map(p => `<article class="item ${p.out ? 'out' : ''}"><div><h3>${esc(p.n)}</h3>${p.d ? `<p>${esc(p.d)}</p>` : ''}<div class="meta"><span class="price">${money(p.p)}</span>${p.tags.map(g => `<span class="tg">${esc(g)}</span>`).join('')}</div></div><div class="art"><span>${e}</span>${imgUrl(p.img) ? `<img loading="lazy" alt="" src="${esc(imgUrl(p.img))}" onerror="this.remove()">` : ''}${p.top ? '<em>⭐ Más pedido</em>' : ''}<div class="ctl">${ctl(p)}</div></div></article>`).join('')}</div></section>`; });
+  $('#menu').innerHTML = h || '<div class="empty">No encontramos ese platillo. Prueba con otra palabra.</div>'; spy();
+}
+function renderChips() { $('#chips').innerHTML = M.cats.map((c, i) => `<button class="chip ${i ? '' : 'on'}" data-k="${esc(c.id || 'otros')}">${emo(c.n)} ${esc(c.n)}</button>`).join(''); }
+let io; function spy() { io && io.disconnect(); io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', 'c-' + c.dataset.k === e.target.id)); }), { rootMargin: '-130px 0px -70% 0px' }); document.querySelectorAll('main section').forEach(s => io.observe(s)); }
+function renderBar() { const n = count(); $('#bar').classList.toggle('hidden', !n || !canOrder()); $('#barN').textContent = n; $('#barT').textContent = money(sub()); }
+function change(id, d) { if (d > 0 && (!prod(id) || prod(id).out || !canOrder())) return; const q = (S.cart[id] || 0) + d; if (q <= 0) delete S.cart[id]; else S.cart[id] = Math.min(q, 20); saveCart(); renderMenu(); renderBar(); if ($('#ov').classList.contains('on') && !$('#form').classList.contains('hidden')) renderSheet(); }
+
+/* ===== Hoja del pedido ===== */
+function renderSheet() {
+  const ids = Object.keys(S.cart); if (!ids.length) { close(); return; }
+  $('#lines').innerHTML = ids.map(id => { const p = prod(id); return `<div class="ln"><div>${esc(p.n)}<small>${money(p.p)} c/u</small></div><div class="step"><button data-a="-" data-id="${esc(id)}" aria-label="Quitar uno">−</button><b>${S.cart[id]}</b><button data-a="+" data-id="${esc(id)}" aria-label="Agregar uno">+</button></div></div>`; }).join('');
+  const e = envio(); $('#tots').innerHTML = `<div class="tot"><span>Subtotal</span><span>${money(sub())}</span></div><div class="tot"><span>Envío ${S.quote ? `(${S.quote.km.toFixed(1)} km)` : '(comparte tu ubicación)'}</span><span>${!S.quote ? '—' : e ? money(e) : '¡Gratis!'}</span></div><div class="tot g"><span>Total</span><b>${money(total())}</b></div>`; chg();
+}
+function chg() { const v = parseFloat($('#fc').value), t = $('#fch'); if (!v) { t.textContent = ''; return; } t.className = 'st ' + (v >= total() ? 'ok' : 'bad'); t.textContent = v >= total() ? `Tu cambio: ${money(v - total())}` : 'El monto no cubre el total'; }
+function openSheet() { if (!count()) return; showForm(); renderSheet(); $('#ov').classList.add('on'); document.body.style.overflow = 'hidden'; }
+function showForm() { $('#form').classList.remove('hidden'); $('#done').classList.add('hidden'); $('#sf').classList.remove('hidden'); $('#shT').textContent = 'Tu pedido'; }
+function close() { $('#ov').classList.remove('on'); document.body.style.overflow = ''; }
+function gps() {
+  const b = $('#gps'), st = $('#gst'); if (!navigator.geolocation) { st.className = 'st bad'; st.textContent = 'Tu navegador no permite compartir ubicación.'; return; }
+  b.disabled = true; st.className = 'st'; st.textContent = '⏳ Obteniendo tu ubicación…';
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try { st.textContent = '⏳ Calculando tu envío…'; const q = await api('cotizar', { lat: pos.coords.latitude, lng: pos.coords.longitude }); S.quote = { ...q, lat: pos.coords.latitude, lng: pos.coords.longitude };
+      if (!q.enZona) { st.className = 'st bad'; st.textContent = `Estás a ${q.km.toFixed(1)} km: fuera de nuestra zona de entrega (máx. ${q.maxKm} km).`; }
+      else { st.className = 'st ok'; st.textContent = `✅ Ubicación lista · ${q.km.toFixed(1)} km · envío ${q.envio ? money(q.envio) : 'gratis'}`; }
+    } catch (e) { S.quote = null; st.className = 'st bad'; st.textContent = e.message; }
+    b.disabled = false; renderSheet();
+  }, er => { b.disabled = false; st.className = 'st bad'; st.textContent = er.code === 1 ? 'Activa el permiso de ubicación en tu navegador para calcular el envío.' : 'No pudimos obtener tu ubicación. Intenta de nuevo.'; }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+}
+async function send() {
+  const err = m => { $('#err').textContent = m; return false; }; $('#err').textContent = ''; if (S.busy) return;
+  if (!canOrder()) return err('Por ahora no estamos recibiendo pedidos.');
+  const n = $('#fn').value.trim(), t = $('#fp').value.replace(/\D/g, ''), d = $('#fa').value.trim();
+  if (!n) return err('Escribe tu nombre.'); if (t.length !== 10) return err('Tu teléfono debe tener 10 dígitos.'); if (!d) return err('Escribe tu dirección.');
+  if (!S.quote) return err('Comparte tu ubicación para calcular el envío.'); if (!S.quote.enZona) return err('Tu ubicación está fuera de la zona de entrega.');
+  if (M.minimo && sub() < M.minimo) return err(`El pedido mínimo es de ${money(M.minimo)}.`);
+  const v = parseFloat($('#fc').value) || 0; if (S.pay === 'Efectivo' && v && v < total()) return err('Con cuánto pagas no cubre el total.');
+  S.busy = true; const b = $('#go'); b.disabled = true; b.textContent = 'Enviando…';
+  try {
+    const r = await api('pedidoWeb', { nombre: n, telefono: t, direccion: d, referencias: $('#fr').value, nota: $('#fnote').value, lat: S.quote.lat, lng: S.quote.lng, pago: S.pay, pagaCon: S.pay === 'Efectivo' ? v : 0, items: Object.entries(S.cart).map(([id, q]) => ({ id, qty: q })), website: $('#fw').value });
+    LS.set('mn_cli', { n, t, d, r: $('#fr').value }); LS.set('mn_orden', { codigo: r.codigo, tel: r.tel, ts: Date.now() });
+    S.cart = {}; saveCart(); S.quote = null; $('#gst').textContent = ''; $('#fnote').value = ''; $('#fc').value = ''; renderMenu(); renderBar(); showTrack(r.codigo, r.tel);
+  } catch (e) { err(e.message); }
+  S.busy = false; b.disabled = false; b.textContent = 'Confirmar pedido';
+}
+
+/* ===== Seguimiento del pedido ===== */
+function resumeOrder() { const o = LS.get('mn_orden', null); if (!o || Date.now() - o.ts > 6 * 3600e3) { LS.del('mn_orden'); $('#seguir').classList.add('hidden'); return; } $('#seguir').classList.remove('hidden'); }
+function showTrack(codigo, tel) {
+  $('#form').classList.add('hidden'); $('#sf').classList.add('hidden'); $('#done').classList.remove('hidden'); $('#shT').textContent = 'Tu pedido ' + codigo; $('#ov').classList.add('on'); document.body.style.overflow = 'hidden'; $('#seguir').classList.remove('hidden');
+  const tick = async () => { try { renderTrack(await api('pedidoEstado', { codigo, tel })); } catch (e) { if (!$('#done').innerHTML) $('#done').innerHTML = `<div class="empty">${esc(e.message)}</div>`; } };
+  clearInterval(S.poll); tick(); S.poll = setInterval(() => { if (!document.hidden) tick(); }, 10000);
+}
+function renderTrack(d) {
+  const steps = [['📥', 'Recibido'], ['👨‍🍳', 'Preparando'], ['🛵', 'En camino'], ['🏠', 'Entregado']], fin = d.etapa === 3 || d.etapa < 0; if (fin) clearInterval(S.poll);
+  const wa = M.whatsapp ? `<a class="call" target="_blank" rel="noopener" href="https://wa.me/52${esc(M.whatsapp)}?text=${encodeURIComponent('Hola, tengo una duda sobre mi pedido ' + d.codigo)}">💬 Escribirnos por WhatsApp</a>` : '';
+  let head;
+  if (d.etapa < 0) head = `<div class="ok1"><div class="ic" style="background:rgba(220,38,38,.15);color:#f87171">!</div><h3>${d.estado === 'Rechazado' ? 'No pudimos aceptar tu pedido' : 'Tu pedido fue cancelado'}</h3><p style="color:var(--muted)">${esc(d.motivo || 'Comunícate con nosotros para más información.')}</p></div>`;
+  else head = `<div class="ok1"><div class="ic">${d.etapa === 3 ? '🏠' : '✓'}</div><h3>${['Recibimos tu pedido', 'Estamos preparando tu pedido', 'Tu pedido va en camino', '¡Buen provecho!'][d.etapa]}</h3><span class="folio">Folio ${esc(d.codigo)}</span><p style="color:var(--muted)">${d.etapa === 0 ? 'Estamos confirmando tu pedido.' : esc(d.detalle || (d.etapa === 2 && d.repartidor ? 'Repartidor: ' + d.repartidor : d.etapa < 3 && d.eta ? 'Tiempo estimado: ' + d.eta : ''))}</p></div>`;
+  $('#done').innerHTML = head + (d.etapa >= 0 ? `<div class="trk">${steps.map((s, i) => `<div class="${i <= d.etapa ? 'on' : ''} ${i === d.etapa && !fin ? 'now' : ''}"><i>${s[0]}</i>${s[1]}</div>`).join('')}</div>` : '') +
+    `<div class="box">${d.items.map(i => `${i.q}× ${esc(i.n)}`).join('<br>')}<br><br>Subtotal ${money(d.subtotal)} · Envío ${d.envio ? money(d.envio) : 'gratis'}<br><b>Total ${money(d.total)}</b></div>${wa}<button class="go" style="margin-top:12px" id="again">${fin ? 'Hacer otro pedido' : 'Cerrar'}</button>`;
+  $('#again').onclick = () => { if (fin) { LS.del('mn_orden'); $('#seguir').classList.add('hidden'); } close(); };
+}
+
+/* ===== Eventos ===== */
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-a]'); if (a) return change(a.dataset.id, a.dataset.a === '+' ? 1 : -1);
+  const c = e.target.closest('.chip'); if (c) { document.getElementById('c-' + c.dataset.k)?.scrollIntoView(); return; }
+  const p = e.target.closest('[data-p]'); if (p) { S.pay = p.dataset.p; document.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('on', b === p)); $('#pEf').classList.toggle('hidden', S.pay !== 'Efectivo'); $('#pTr').classList.toggle('hidden', S.pay !== 'Transferencia'); }
+  if (e.target.id === 'cp') navigator.clipboard?.writeText($('#clabe').textContent.replace(/\s/g, '')).then(() => { e.target.textContent = '✓ Copiada'; });
+});
+$('#q').addEventListener('input', renderMenu); $('#bar').onclick = openSheet; $('#x').onclick = close; $('#gps').onclick = gps; $('#go').onclick = send; $('#fc').addEventListener('input', chg);
+$('#fp').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10); });
+$('#seguir').onclick = () => { const o = LS.get('mn_orden', null); if (o) showTrack(o.codigo, o.tel); };
+$('#ov').addEventListener('click', e => { if (e.target.id === 'ov') close(); }); document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+loadMenu();
+</script>
+</body>
+</html>

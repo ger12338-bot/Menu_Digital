@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>POS Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --nopal:#123D36; --nopal-2:#1B5248; --brand:#0F7A66; --brand-ink:#fff;
+  --chile:#C8372D; --maiz:#E2A329;
+  --bg:#F2F5F2; --surface:#fff; --text:#18231F; --muted:#5E6E68; --line:#DCE3DE;
+  --sidebar-text:#DCEBE5; --radius:12px; --radius-sm:8px;
+  --font:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]){--bg:#0E1513;--surface:#16201D;--text:#E7EFEB;--muted:#93A59E;--line:#27352F;--brand:#2BB79C;--brand-ink:#08201A;--nopal:#0A211D;--nopal-2:#12302A}
+}
+:root[data-theme=dark]{--bg:#0E1513;--surface:#16201D;--text:#E7EFEB;--muted:#93A59E;--line:#27352F;--brand:#2BB79C;--brand-ink:#08201A;--nopal:#0A211D;--nopal-2:#12302A}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+button{font:inherit;cursor:pointer;border:0;border-radius:var(--radius-sm);padding:10px 16px;font-weight:600;background:var(--brand);color:var(--brand-ink);transition:transform .08s,filter .15s}
+button:hover{filter:brightness(1.07)} button:active{transform:scale(.97)}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--maiz);outline-offset:2px}
+input{font:inherit;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)}
+.hidden{display:none!important}
+
+/* Pantallas de acceso */
+.gate{min-height:100%;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,var(--nopal),var(--nopal-2))}
+.gate-card{background:var(--surface);border-radius:20px;padding:28px;width:100%;max-width:380px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.gate-card h1{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.gate-card p{color:var(--muted);margin-bottom:18px}
+.gate-card label{display:block;font-weight:600;margin:12px 0 6px}
+.users{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.users button{background:var(--bg);color:var(--text);border:1px solid var(--line)}
+.users button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.dots{display:flex;justify-content:center;gap:12px;margin:10px 0 16px}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line)} .dots i.f{background:var(--brand);border-color:var(--brand)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pad button{padding:16px;font-size:1.25rem;background:var(--bg);color:var(--text);border:1px solid var(--line)}
+.err{color:var(--chile);font-weight:600;min-height:22px;text-align:center;margin-top:10px}
+
+/* App */
+#app{display:grid;grid-template-columns:240px 1fr;height:100%}
+.side{background:var(--nopal);color:var(--sidebar-text);display:flex;flex-direction:column;padding:18px 12px;gap:4px;overflow:auto}
+.brand{font-weight:800;font-size:1.2rem;padding:4px 10px 16px;color:#fff;letter-spacing:-.02em}
+.nav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;color:var(--sidebar-text);padding:11px 12px}
+.nav:hover{background:var(--nopal-2);filter:none} .nav.on{background:var(--brand);color:var(--brand-ink)}
+.nav small{margin-left:auto;opacity:.6;font-weight:500}
+.side .spacer{flex:1}
+.who{padding:10px;font-size:.85rem;opacity:.85}
+main{overflow:auto;padding:26px 30px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px}
+.top h2{font-size:1.6rem;font-weight:800;letter-spacing:-.02em}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;font-size:.8rem;font-weight:700;background:var(--surface);border:1px solid var(--line)}
+.pill b{width:9px;height:9px;border-radius:50%;background:var(--muted)} .pill.ok b{background:var(--brand)} .pill.bad b{background:var(--chile)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.card h3{font-size:1rem;margin-bottom:6px} .card p{color:var(--muted);font-size:.9rem}
+.tag{display:inline-block;margin-top:10px;font-size:.78rem;font-weight:700;padding:3px 9px;border-radius:6px;background:var(--bg);color:var(--muted)}
+.tag.live{background:var(--brand);color:var(--brand-ink)}
+.table{width:100%;border-collapse:collapse} .table td,.table th{padding:10px;border-bottom:1px solid var(--line);text-align:left}
+#toasts{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;gap:8px;z-index:50}
+.toast{background:var(--text);color:var(--bg);padding:12px 16px;border-radius:var(--radius-sm);font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast.error{background:var(--chile);color:#fff}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px;z-index:40}
+.modal{background:var(--surface);border-radius:var(--radius);padding:22px;max-width:420px;width:100%}
+.modal h3{margin-bottom:8px} .modal .row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+.form label{display:block;font-weight:600;margin-top:12px;font-size:.9rem}.form input,.form select{margin-top:5px;font-weight:400}
+select{font:inherit;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}.bar input,.bar select{width:auto;flex:1;min-width:150px}
+.tabs{display:flex;gap:6px;margin-bottom:16px}.tabs button{background:var(--surface);color:var(--text);border:1px solid var(--line)}.tabs button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.tw{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}.tw .table th{font-size:.82rem;color:var(--muted)}
+.mini{padding:6px 10px;font-size:.82rem;margin-right:4px}.off{opacity:.5}.muted{color:var(--muted)}
+.badge{padding:2px 9px;border-radius:6px;font-size:.78rem;font-weight:700;background:var(--bg)}.badge.ok{background:var(--brand);color:var(--brand-ink)}.badge.warn{background:var(--chile);color:#fff}
+
+.pos{display:grid;grid-template-columns:1fr 390px;gap:16px;align-items:start}
+.pos-r{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;position:sticky;top:0;max-height:calc(100vh - 100px)}
+.pos-r>div{padding:12px 14px}.cart{flex:1;overflow:auto;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px}.chips button{white-space:nowrap;background:var(--surface);color:var(--text);border:1px solid var(--line)}.chips button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:10px}
+.prod{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:var(--surface);color:var(--text);border:1px solid var(--line);min-height:86px;gap:3px;padding:12px}.prod span{color:var(--brand);font-weight:800}.prod small{color:var(--muted);font-weight:500}.prod[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:flex;gap:4px}.seg button{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--line)}.seg button.on{background:var(--nopal);color:#fff;border-color:var(--nopal)}
+.line{padding:9px 0;border-bottom:1px dashed var(--line)}.line .l1{display:flex;justify-content:space-between;gap:8px;font-weight:600}.line .l2{display:flex;gap:4px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.qty{display:inline-flex;align-items:center;gap:6px}.qty button{padding:2px 10px}.tot{display:flex;justify-content:space-between;padding:2px 0}.tot.big{font-size:1.4rem;font-weight:800}
+.sub{font-size:.8rem;color:var(--muted)}.pay label{display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:600}.pay label span{width:110px}
+@media(max-width:900px){.pos{grid-template-columns:1fr}.pos-r{position:static;max-height:none}}
+
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:22px}
+.mesa{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:3px;min-height:96px;padding:12px;background:var(--surface);color:var(--text);border:2px solid var(--line)}
+.mesa b{font-size:1.25rem}.mesa small{color:var(--muted);font-weight:500}.mesa.oc{border-color:var(--brand)}.mesa.pc{border-color:var(--maiz)}.mesa.lt{box-shadow:0 0 0 3px var(--brand)}
+.kds{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;align-items:start}
+.tk{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:12px}.tk.warn{border-color:var(--maiz)}.tk.late{border-color:var(--chile)}
+.tk h4{display:flex;justify-content:space-between;font-size:1.05rem}.kit{display:flex;justify-content:space-between;gap:8px;width:100%;margin-top:6px;text-align:left;background:var(--bg);color:var(--text);border:1px solid var(--line)}
+.kit.Preparando{background:var(--maiz);color:#1a1200;border-color:var(--maiz)}.kit.Listo{background:var(--brand);color:var(--brand-ink)}
+.h2{font-size:1.05rem;font-weight:800;margin:6px 0 10px}
+.kpi b{display:block;font-size:1.45rem;margin-top:2px}.kpi span{color:var(--muted);font-size:.85rem}.den{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.den label{font-size:.85rem;font-weight:600}.den input{margin-top:3px;padding:8px}.big{font-size:1.2rem;font-weight:800}
+.pwrap{display:flex;gap:6px}.pwrap input{flex:1}.pwrap button{padding:8px 12px;font-size:.85rem;white-space:nowrap}
+.meter{height:6px;border-radius:4px;background:var(--line);margin-top:6px;overflow:hidden}.meter i{display:block;height:100%;width:0;transition:width .2s,background .2s}
+.recientes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.recientes button{padding:5px 10px;font-size:.8rem;background:var(--bg);color:var(--text);border:1px solid var(--line)}
+@media(max-width:760px){
+  #app{grid-template-columns:1fr;grid-template-rows:1fr auto}
+  .side{flex-direction:row;order:2;padding:6px;overflow-x:auto}.brand,.who,.spacer,.nav small{display:none}
+  .nav{flex-direction:column;gap:2px;font-size:.72rem;padding:8px 10px;width:auto;min-width:68px;text-align:center}
+  main{padding:18px 16px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<section id="setup" class="gate hidden"><div class="gate-card">
+  <h1>Conectar con Google Sheets</h1>
+  <p>Pega la URL de tu aplicación web de Apps Script.</p>
+  <label for="api-url">URL del Apps Script</label>
+  <input id="api-url" placeholder="https://script.google.com/macros/s/.../exec">
+  <div class="err" id="setup-err"></div>
+  <button style="width:100%;margin-top:8px" onclick="saveApiUrl()">Probar y guardar</button>
+</div></section>
+
+<section id="login" class="gate hidden"><div class="gate-card">
+  <h1 id="login-title">POS Pro</h1>
+  <p>Inicia sesión para continuar.</p>
+  <form onsubmit="loginSubmit(event)" autocomplete="on">
+    <label for="lg-user">Usuario</label>
+    <input id="lg-user" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+    <label for="lg-pass">Contraseña</label>
+    <div class="pwrap"><input id="lg-pass" name="password" type="password" autocomplete="current-password" required><button type="button" class="ghost" id="lg-eye" onclick="togglePass()">Mostrar</button></div>
+    <div class="err" id="login-err" role="alert"></div>
+    <button type="submit" id="lg-btn" style="width:100%">Entrar</button>
+  </form>
+  <button class="ghost" style="width:100%;margin-top:8px" onclick="changeApiUrl()">Cambiar conexión</button>
+</div></section>
+
+<div id="app" class="hidden">
+  <aside class="side">
+    <div class="brand" id="brand">POS Pro</div>
+    <div id="nav"></div>
+    <div class="spacer"></div>
+    <div class="who" id="who"></div>
+    <button class="ghost nav" style="color:var(--sidebar-text);border-color:var(--nopal-2);margin-bottom:6px" onclick="miCuenta()">Mi cuenta</button>
+    <button class="ghost nav" style="color:var(--sidebar-text);border-color:var(--nopal-2)" onclick="logout()">Cerrar sesión</button>
+  </aside>
+  <main>
+    <div class="top"><h2 id="view-title"></h2><div style="display:flex;gap:8px;align-items:center"><button class="pill hidden" id="menuSw" onclick="toggleMenu()"></button><span class="pill" id="conn"><b></b><span>Conectando</span></span></div></div>
+    <div id="view"></div>
+  </main>
+</div>
+<div id="toasts"></div>
+
+<script>
+/* ============ CORE: Estado ============ */
+const S = { url: localStorage.getItem('pos_api_url') || '', token: sessionStorage.getItem('pos_token') || '', user: JSON.parse(sessionStorage.getItem('pos_user') || 'null'), config: {} };
+const $ = id => document.getElementById(id);
+const money = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(Number(n) || 0);
+
+/* ============ CORE: API (único punto de contacto con Sheets) ============ */
+const API = {
+  async call(action, payload = {}) {
+    // text/plain evita el preflight CORS de Apps Script
+    const res = await fetch(S.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, token: S.token, ...payload }) });
+    const j = await res.json();
+    if (!j.ok) { if (j.error === 'SESION_EXPIRADA') { logout(); throw new Error('Tu sesión expiró. Ingresa de nuevo.'); } throw new Error(j.error); }
+    return j.data;
+  },
+  list: t => API.call('list', { table: t }),
+  save: (t, row, key) => API.call('save', { table: t, row, key }),
+  deactivate: (t, id) => API.call('deactivate', { table: t, id }),
+  nextFolio: () => API.call('nextFolio')
+};
+
+/* ============ CORE: UI ============ */
+function toast(msg, type = 'info') { const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg; $('toasts').append(t); setTimeout(() => t.remove(), 3500); }
+function confirmModal(title, msg, okText = 'Confirmar') {
+  return new Promise(res => {
+    const bg = document.createElement('div'); bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h3></h3><p style="color:var(--muted)"></p><div class="row"><button class="ghost">Cancelar</button><button>${okText}</button></div></div>`;
+    bg.querySelector('h3').textContent = title; bg.querySelector('p').textContent = msg;
+    const [no, yes] = bg.querySelectorAll('button'); no.onclick = () => { bg.remove(); res(false); }; yes.onclick = () => { bg.remove(); res(true); };
+    document.body.append(bg); yes.focus();
+  });
+}
+
+/* ============ Conexión y login ============ */
+function show(id) { ['setup', 'login', 'app'].forEach(x => $(x).classList.toggle('hidden', x !== id)); }
+async function saveApiUrl() {
+  const url = $('api-url').value.trim(); $('setup-err').textContent = '';
+  try { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'ping' }) }); if (!(await r.json()).ok) throw 0; S.url = url; localStorage.setItem('pos_api_url', url); initLogin(); }
+  catch { $('setup-err').textContent = 'No se pudo conectar. Revisa que la URL termine en /exec y que el acceso sea "Cualquiera".'; }
+}
+function changeApiUrl() { show('setup'); $('api-url').value = S.url; }
+
+function initLogin() {
+  show('login'); $('login-err').textContent = '';
+  $('login-title').textContent = localStorage.getItem('pos_negocio') || 'POS Pro';
+  $('lg-user').value = localStorage.getItem('pos_last_user') || ''; $('lg-pass').value = '';
+  ($('lg-user').value ? $('lg-pass') : $('lg-user')).focus();
+}
+function togglePass() { const i = $('lg-pass'); i.type = i.type === 'password' ? 'text' : 'password'; $('lg-eye').textContent = i.type === 'password' ? 'Mostrar' : 'Ocultar'; }
+async function loginSubmit(e) {
+  e.preventDefault(); const b = $('lg-btn'); $('login-err').textContent = ''; b.disabled = true; b.textContent = 'Entrando…';
+  try {
+    const r = await API.call('login', { usuario: $('lg-user').value, pass: $('lg-pass').value });
+    S.token = r.token; S.user = r.user; sessionStorage.setItem('pos_token', r.token); sessionStorage.setItem('pos_user', JSON.stringify(r.user)); localStorage.setItem('pos_last_user', r.user.usuario);
+    $('lg-pass').value = ''; startApp();
+  } catch (x) { $('login-err').textContent = x.message; $('lg-pass').value = ''; $('lg-pass').focus(); }
+  finally { b.disabled = false; b.textContent = 'Entrar'; }
+}
+function logout() { clearInterval(window._pwPoll); S.token = ''; S.user = null; sessionStorage.clear(); S.url ? initLogin() : show('setup'); }
+
+/* ============ Módulos y router ============ */
+// live:true = ya construido. Los demás se activan en su bloque.
+const ALL = ['Admin', 'Gerente', 'Cajero', 'Mesero', 'Cocina'];
+const MODULES = [
+  { id: 'inicio', label: 'Inicio', icon: '🏠', roles: ALL, live: true, render: renderHome },
+  { id: 'venta', label: 'Venta rápida', icon: '🧾', roles: ['Admin', 'Gerente', 'Cajero'], live: true, render: renderVenta },
+  { id: 'mesas', label: 'Mesas y delivery', icon: '🍽️', roles: ['Admin', 'Gerente', 'Cajero', 'Mesero'], live: true, render: renderMesas },
+  { id: 'cuenta', label: 'Cuenta', icon: '🧾', roles: ['Admin', 'Gerente', 'Cajero', 'Mesero'], live: true, hidden: true, render: renderVenta },
+  { id: 'cocina', label: 'Cocina', icon: '👨‍🍳', roles: ['Admin', 'Gerente', 'Cajero', 'Cocina'], live: true, render: renderCocina },
+  { id: 'caja', label: 'Caja', icon: '💵', roles: ['Admin', 'Gerente', 'Cajero'], live: true, render: () => renderCaja() },
+  { id: 'historial', label: 'Historial', icon: '📋', roles: ['Admin', 'Gerente', 'Cajero'], live: true, render: renderVentas },
+  { id: 'productos', label: 'Catálogo', icon: '🌮', roles: ['Admin', 'Gerente'], live: true, render: () => renderCatalog() },
+  { id: 'inventario', label: 'Inventario', icon: '📦', roles: ['Admin', 'Gerente'], block: 7, desc: 'Insumos, recetas y costos reales.' },
+  { id: 'reportes', label: 'Reportes', icon: '📊', roles: ['Admin', 'Gerente'], block: 10, desc: 'Dashboard, utilidad y comparativos.' },
+  { id: 'usuarios', label: 'Usuarios', icon: '👤', roles: ['Admin'], live: true, render: renderUsers },
+  { id: 'actividad', label: 'Actividad', icon: '🕘', roles: ['Admin'], live: true, render: renderLog },
+  { id: 'config', label: 'Configuración', icon: '⚙️', roles: ['Admin'], live: true, render: renderConfig }
+];
+function startApp() {
+  show('app');
+  $('who').textContent = `${S.user.nombre} · ${S.user.rol}`;
+  $('nav').innerHTML = ''; MODULES.filter(m => m.roles.includes(S.user.rol) && !m.hidden).forEach(m => {
+    const b = document.createElement('button'); b.className = 'nav'; b.dataset.id = m.id; b.innerHTML = `<span>${m.icon}</span>${m.label}`; b.onclick = () => { location.hash = m.id; }; $('nav').append(b);
+  });
+  API.call('getConfig').then(c => { S.config = c; localStorage.setItem('pos_negocio', c.negocio || ''); $('brand').textContent = c.negocio || 'POS Pro'; document.title = c.negocio || 'POS Pro'; drawMenuSw(); setConn(true); }).catch(() => setConn(false));
+  route();
+  postLogin(); startWebPoll();
+}
+function setConn(ok) { const c = $('conn'); c.className = 'pill ' + (ok ? 'ok' : 'bad'); c.lastElementChild.textContent = ok ? 'Conectado a Sheets' : 'Sin conexión'; }
+function route() {
+  if (!S.user) return;
+  clearInterval(window._poll);
+  const m = MODULES.find(x => x.id === (location.hash.slice(1) || 'inicio') && x.roles.includes(S.user.rol)) || MODULES[0];
+  document.querySelectorAll('.nav[data-id]').forEach(b => b.classList.toggle('on', b.dataset.id === (m.id === 'cuenta' ? 'mesas' : m.id)));
+  $('view-title').textContent = m.label;
+  m.live ? m.render() : ($('view').innerHTML = `<div class="card"><h3>Disponible en el Bloque ${m.block}</h3><p>${m.desc}</p></div>`);
+}
+window.addEventListener('hashchange', route);
+
+function renderHome() {
+  const cards = MODULES.slice(1).filter(m => m.roles.includes(S.user.rol) && !m.live).map(m => `<div class="card"><h3>${m.icon} ${m.label}</h3><p>${m.desc}</p><span class="tag">Bloque ${m.block}</span></div>`).join('');
+  $('view').innerHTML = `<div class="card" style="margin-bottom:14px"><h3>Tu punto de venta está operativo</h3><p>Venta, mesas, cocina, delivery, caja con liquidación por propietario, historial y configuración están listos. Siguen inventario y reportes.</p><span class="tag live">Bloques 0 a 6 y 11</span></div><div class="grid">${cards}</div>`;
+}
+
+/* ============ Utilidades de formularios ============ */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const STR = [['', 0, 'transparent'], ['Débil', 25, 'var(--chile)'], ['Débil', 40, 'var(--chile)'], ['Regular', 60, 'var(--maiz)'], ['Buena', 80, 'var(--brand)'], ['Fuerte', 100, 'var(--brand)']];
+function strength(p) { let n = 0; if (p.length >= 8) n++; if (p.length >= 12) n++; if (/[a-z]/.test(p) && /[A-Z]/.test(p)) n++; if (/\d/.test(p)) n++; if (/[^A-Za-z0-9]/.test(p)) n++; return p ? Math.max(1, n) : 0; }
+function formModal(title, fields, vals = {}, note = '') {
+  return new Promise(res => {
+    const bg = document.createElement('div'); bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h3>${esc(title)}</h3>${note ? `<p class="muted">${esc(note)}</p>` : ''}<div class="form">${fields.map(f => `<label>${esc(f.label)}${f.type === 'select' ? `<select id="f_${f.k}">${f.opts.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select>` : `<input id="f_${f.k}" type="${f.type || 'text'}" ${f.attrs || ''}>`}${f.meter ? `<div class="meter"><i id="mt_${f.k}"></i></div><small class="sub" id="ml_${f.k}"></small>` : ''}</label>`).join('')}</div><div class="err" id="f_err" role="alert"></div><div class="row">${note.includes('obligatorio') ? '' : '<button class="ghost" id="f_no">Cancelar</button>'}<button id="f_ok">Guardar</button></div></div>`;
+    fields.forEach(f => {
+      const el = bg.querySelector('#f_' + f.k); el.value = vals[f.k] ?? f.def ?? '';
+      if (f.meter) el.addEventListener('input', () => { const m = STR[strength(el.value)]; bg.querySelector('#mt_' + f.k).style.cssText = `width:${m[1]}%;background:${m[2]}`; bg.querySelector('#ml_' + f.k).textContent = m[0]; });
+    });
+    const no = bg.querySelector('#f_no'); if (no) no.onclick = () => { bg.remove(); res(null); };
+    const ok = () => {
+      const out = {}, err = m => bg.querySelector('#f_err').textContent = m;
+      for (const f of fields) {
+        let v = bg.querySelector('#f_' + f.k).value; if (f.type !== 'password') v = v.trim();
+        if (f.req && v === '') return err(`Completa: ${f.label}`);
+        if (f.min && v !== '' && v.length < f.min) return err(`${f.label}: mínimo ${f.min} caracteres`);
+        if (f.pattern && v !== '' && !f.pattern.test(v)) return err(f.msg || `${f.label} no es válido`);
+        if (f.type === 'number') { v = v === '' ? 0 : Number(v); if (v < 0 || isNaN(v)) return err(`${f.label} no es válido`); }
+        out[f.k] = v;
+      }
+      bg.remove(); res(out);
+    };
+    bg.querySelector('#f_ok').onclick = ok; bg.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); ok(); } });
+    document.body.append(bg); bg.querySelector('input,select').focus();
+  });
+}
+async function run(fn, okMsg) { try { await fn(); if (okMsg) toast(okMsg); } catch (e) { toast(e.message, 'error'); } }
+
+/* ============ Mi cuenta: contraseña y PIN de supervisor ============ */
+const saveUserLocal = () => sessionStorage.setItem('pos_user', JSON.stringify(S.user));
+async function changeMyPass(forced = false) {
+  const note = forced ? 'Es obligatorio crear tu contraseña personal antes de continuar. Mínimo 8 caracteres; mezcla letras y números.' : 'Mínimo 8 caracteres; mezcla letras y números.';
+  const fields = (forced ? [] : [{ k: 'actual', label: 'Contraseña actual', type: 'password', req: true }]).concat([{ k: 'nueva', label: 'Nueva contraseña', type: 'password', req: true, min: 8, meter: true }, { k: 'nueva2', label: 'Repite la nueva contraseña', type: 'password', req: true }]);
+  for (;;) {
+    const v = await formModal('Contraseña', fields, {}, note); if (!v) return null;
+    if (v.nueva !== v.nueva2) { toast('Las contraseñas no coinciden', 'error'); continue; }
+    try { await API.call('changePass', { actual: v.actual, nueva: v.nueva }); S.user.cambiarPass = false; saveUserLocal(); toast('Contraseña actualizada'); return v.nueva; } catch (e) { toast(e.message, 'error'); }
+  }
+}
+async function changeMyPin(forced = false, pw = '') {
+  const note = forced ? 'Es obligatorio definir tu PIN de supervisor: autoriza descuentos, cancelaciones y devoluciones. Ya no sirve para entrar.' : 'El PIN de supervisor autoriza descuentos, cancelaciones y devoluciones. No sirve para entrar al sistema.';
+  const pin = { type: 'password', req: true, attrs: 'inputmode="numeric" maxlength="4"', pattern: /^\d{4}$/, msg: 'El PIN son 4 números' };
+  const fields = (pw ? [] : [{ k: 'actual', label: 'Tu contraseña', type: 'password', req: true }]).concat([{ k: 'pin', label: 'Nuevo PIN (4 dígitos)', ...pin }, { k: 'pin2', label: 'Repite el PIN', ...pin }]);
+  for (;;) {
+    const v = await formModal('PIN de supervisor', fields, {}, note); if (!v) return;
+    if (v.pin !== v.pin2) { toast('Los PIN no coinciden', 'error'); continue; }
+    try { await API.call('changePin', { pin: v.pin, actual: v.actual || pw }); S.user.pinPendiente = false; saveUserLocal(); return toast('PIN de supervisor actualizado'); } catch (e) { toast(e.message, 'error'); }
+  }
+}
+async function postLogin() { let pw = ''; if (S.user.cambiarPass) pw = (await changeMyPass(true)) || ''; if (S.user.pinPendiente) await changeMyPin(true, pw); }
+function miCuenta() {
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal"><h3>Mi cuenta</h3><p class="muted">${esc(S.user.nombre)} · ${esc(S.user.usuario || '')} · ${esc(S.user.rol)}</p><div class="form"><button class="ghost" id="mc1" style="width:100%;margin-top:6px">Cambiar contraseña</button>${isMgr() ? '<button class="ghost" id="mc2" style="width:100%;margin-top:8px">Cambiar PIN de supervisor</button>' : ''}</div><div class="row"><button class="ghost" id="mcx">Cerrar</button></div></div>`;
+  bg.querySelector('#mcx').onclick = () => bg.remove(); bg.querySelector('#mc1').onclick = () => { bg.remove(); changeMyPass(); };
+  if (isMgr()) bg.querySelector('#mc2').onclick = () => { bg.remove(); changeMyPin(); };
+  document.body.append(bg);
+}
+
+/* ============ Bloque 1: Usuarios ============ */
+const ROLES = ['Admin', 'Gerente', 'Cajero', 'Mesero', 'Cocina'];
+const userFields = nuevo => [{ k: 'Nombre', label: 'Nombre', req: true }, { k: 'Usuario', label: 'Usuario para entrar (sin espacios)', req: true, attrs: 'autocapitalize="none" spellcheck="false"', pattern: /^[A-Za-z0-9._-]{3,30}$/, msg: 'Usuario: 3 a 30 letras, números, punto o guion' }, { k: 'Rol', label: 'Rol', type: 'select', opts: ROLES.map(r => [r, r]) }, { k: 'pass', label: nuevo ? 'Contraseña temporal (la cambiará al entrar)' : 'Restablecer contraseña (vacío = no cambiar)', req: nuevo, min: 8 }, { k: 'pin', label: 'PIN de supervisor (solo Admin/Gerente, opcional)', type: 'password', attrs: 'inputmode="numeric" maxlength="4"', pattern: /^\d{4}$/, msg: 'El PIN son 4 números' }];
+async function renderUsers() {
+  $('view').innerHTML = '<p class="muted">Cargando…</p>';
+  let list; try { list = await API.call('listUsers'); } catch (e) { return toast(e.message, 'error'); }
+  $('view').innerHTML = `<div class="bar"><button onclick="editUser()">Nuevo usuario</button></div><div class="tw"><table class="table"><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr>${list.map(u => `<tr class="${u.Activo ? '' : 'off'}"><td>${esc(u.Nombre)}</td><td>${esc(u.Usuario)}</td><td>${esc(u.Rol)}</td><td><span class="badge ${u.Activo ? 'ok' : ''}">${u.Activo ? 'Activo' : 'Inactivo'}</span></td><td><button class="mini ghost" onclick="editUser('${u.ID}')">Editar</button>${u.ID === S.user.id ? '' : `<button class="mini ghost" onclick="toggleUser('${u.ID}',${!u.Activo})">${u.Activo ? 'Desactivar' : 'Activar'}</button>`}</td></tr>`).join('')}</table></div>`;
+  window._users = list;
+}
+async function editUser(id) {
+  const cur = id ? _users.find(u => u.ID === id) : null;
+  const v = await formModal(cur ? 'Editar usuario' : 'Nuevo usuario', userFields(!cur), cur || {}); if (!v) return;
+  run(async () => { await API.call('saveUser', { row: { ID: id || '', Nombre: v.Nombre, Usuario: v.Usuario, Rol: v.Rol, Activo: cur ? cur.Activo : true }, pass: v.pass || '', pin: v.pin || '' }); renderUsers(); }, 'Usuario guardado');
+}
+async function toggleUser(id, activo) {
+  const u = _users.find(x => x.ID === id);
+  if (!activo && !(await confirmModal('Desactivar usuario', `${u.Nombre} ya no podrá entrar. Su historial se conserva.`, 'Desactivar'))) return;
+  run(async () => { await API.call('saveUser', { row: { ID: id, Nombre: u.Nombre, Usuario: u.Usuario, Rol: u.Rol, Activo: activo } }); renderUsers(); }, activo ? 'Usuario activado' : 'Usuario desactivado');
+}
+async function renderLog() {
+  $('view').innerHTML = '<p class="muted">Cargando…</p>';
+  let rows; try { rows = (await API.list('Bitacora')).reverse().slice(0, 200); } catch (e) { return toast(e.message, 'error'); }
+  $('view').innerHTML = `<p class="muted" style="margin-bottom:10px">Últimos ${rows.length} movimientos.</p><div class="tw"><table class="table"><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr>${rows.map(r => `<tr><td>${new Date(r.Fecha).toLocaleString('es-MX')}</td><td>${esc(r.Usuario)}</td><td>${esc(r.Accion)}</td><td class="muted">${esc(r.Detalle)}</td></tr>`).join('')}</table></div>`;
+}
+
+/* ============ Bloque 2: Catálogo ============ */
+const C = { tab: 'productos', q: '', cat: '', prods: [], cats: [], props: [] };
+const nameOf = (list, id) => (list.find(x => x.ID === id) || {}).Nombre || '—';
+const opts = (list, empty) => (empty ? [['', empty]] : []).concat(list.filter(x => x.Activo).map(x => [x.ID, x.Nombre]));
+const ENT = {
+  Productos: () => [{ k: 'Nombre', label: 'Nombre', req: true }, { k: 'Categoria', label: 'Categoría', type: 'select', opts: opts(C.cats, 'Sin categoría') }, { k: 'PropietarioID', label: 'Propietario (dueño del platillo)', type: 'select', opts: opts(C.props) }, { k: 'Precio', label: 'Precio de venta', type: 'number', req: true, attrs: 'step="0.5" min="0" inputmode="decimal"' }, { k: 'Costo', label: 'Costo (opcional)', type: 'number', attrs: 'step="0.5" min="0" inputmode="decimal"' }, { k: 'Imagen', label: 'URL de imagen (opcional)' }, { k: 'Descripcion', label: 'Descripción para el menú web (opcional)' }, { k: 'Etiquetas', label: 'Etiquetas separadas por coma (ej. Picante, Vegetariana)' }, { k: 'Destacado', label: '¿Destacar como “Más pedido”?', type: 'select', opts: [['false', 'No'], ['true', 'Sí']] }, { k: 'EnMenu', label: '¿Mostrar en el menú web?', type: 'select', opts: [['true', 'Sí'], ['false', 'No']] }],
+  Categorias: () => [{ k: 'Nombre', label: 'Nombre', req: true }, { k: 'Orden', label: 'Orden en pantalla', type: 'number', def: 0 }],
+  Propietarios: () => [{ k: 'Nombre', label: 'Nombre', req: true }, { k: 'Telefono', label: 'Teléfono (opcional)', type: 'tel' }, { k: 'Comision', label: 'Comisión que le cobras (%)', type: 'number', def: 0, attrs: 'step="0.5" max="100"' }]
+};
+const LIST = { Productos: 'prods', Categorias: 'cats', Propietarios: 'props' };
+async function renderCatalog() {
+  $('view').innerHTML = '<p class="muted">Cargando…</p>';
+  try { [C.prods, C.cats, C.props] = await Promise.all([API.list('Productos'), API.list('Categorias'), API.list('Propietarios')]); } catch (e) { return toast(e.message, 'error'); }
+  drawCatalog();
+}
+function drawCatalog() {
+  const tabs = [['productos', 'Productos'], ['categorias', 'Categorías'], ['propietarios', 'Propietarios']];
+  const table = { productos: 'Productos', categorias: 'Categorias', propietarios: 'Propietarios' }[C.tab];
+  let body = '';
+  if (C.tab === 'productos') {
+    const q = C.q.toLowerCase();
+    const rows = C.prods.filter(p => (!q || String(p.Nombre).toLowerCase().includes(q)) && (!C.cat || p.Categoria === C.cat));
+    body = `<div class="bar"><input id="q" placeholder="Buscar producto" value="${esc(C.q)}" oninput="C.q=this.value;drawCatalog();$('q').focus();$('q').setSelectionRange(99,99)"><select onchange="C.cat=this.value;drawCatalog()">${[['', 'Todas las categorías']].concat(C.cats.map(c => [c.ID, c.Nombre])).map(o => `<option value="${esc(o[0])}" ${o[0] === C.cat ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select><button onclick="editEnt('Productos')">Nuevo producto</button></div>
+    <div class="tw"><table class="table"><tr><th>Producto</th><th>Categoría</th><th>Propietario</th><th>Precio</th><th>Margen</th><th>Venta</th><th></th></tr>${rows.map(p => `<tr class="${p.Activo ? '' : 'off'}"><td>${esc(p.Nombre)}</td><td>${esc(nameOf(C.cats, p.Categoria))}</td><td>${esc(nameOf(C.props, p.PropietarioID))}</td><td>${money(p.Precio)}</td><td class="muted">${Number(p.Costo) ? money(p.Precio - p.Costo) : '—'}</td><td><button class="mini ${p.Disponible ? '' : 'ghost'}" onclick="toggleEnt('Productos','${p.ID}','Disponible')">${p.Disponible ? 'Disponible' : 'Agotado'}</button></td><td><button class="mini ghost" onclick="editEnt('Productos','${p.ID}')">Editar</button><button class="mini ghost" onclick="toggleEnt('Productos','${p.ID}','Activo')">${p.Activo ? 'Desactivar' : 'Activar'}</button></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Aún no hay productos. Crea el primero con “Nuevo producto”.</td></tr>'}</table></div>`;
+  } else {
+    const list = C[LIST[table]], isP = C.tab === 'propietarios';
+    body = `<div class="bar"><button onclick="editEnt('${table}')">${isP ? 'Nuevo propietario' : 'Nueva categoría'}</button></div><div class="tw"><table class="table"><tr><th>Nombre</th>${isP ? '<th>Teléfono</th><th>Comisión</th>' : '<th>Orden</th>'}<th>Productos</th><th></th></tr>${list.map(x => `<tr class="${x.Activo ? '' : 'off'}"><td>${esc(x.Nombre)}</td>${isP ? `<td>${esc(x.Telefono) || '—'}</td><td>${x.Comision || 0}%</td>` : `<td>${x.Orden}</td>`}<td>${C.prods.filter(p => (isP ? p.PropietarioID : p.Categoria) === x.ID).length}</td><td><button class="mini ghost" onclick="editEnt('${table}','${x.ID}')">Editar</button>${x.ID === 'P-001' ? '<span class="badge">Recibe envíos</span>' : `<button class="mini ghost" onclick="toggleEnt('${table}','${x.ID}','Activo')">${x.Activo ? 'Desactivar' : 'Activar'}</button>`}</td></tr>`).join('')}</table></div>`;
+  }
+  $('view').innerHTML = `<div class="tabs">${tabs.map(t => `<button class="${C.tab === t[0] ? 'on' : ''}" onclick="C.tab='${t[0]}';drawCatalog()">${t[1]}</button>`).join('')}</div>${body}`;
+}
+async function editEnt(table, id) {
+  const cur = id ? C[LIST[table]].find(x => x.ID === id) : null;
+  if (table === 'Productos' && !cur && !C.props.some(p => p.Activo)) return toast('Primero crea un propietario', 'error');
+  const v = await formModal(cur ? 'Editar' : 'Nuevo', ENT[table](), table === 'Productos' ? Object.assign({}, cur, { Destacado: cur && cur.Destacado === true ? 'true' : 'false', EnMenu: cur && cur.EnMenu === false ? 'false' : 'true' }) : (cur || {})); if (!v) return;
+  const row = Object.assign({}, cur || { Activo: true, Disponible: true }, v);
+  if (table === 'Productos') { row.Destacado = v.Destacado === 'true'; row.EnMenu = v.EnMenu === 'true'; }
+  run(async () => { await API.save(table, row); await renderCatalog(); }, 'Guardado');
+}
+async function toggleEnt(table, id, field) {
+  const x = C[LIST[table]].find(i => i.ID === id);
+  if (field === 'Activo' && x.Activo && !(await confirmModal('Desactivar', `“${x.Nombre}” dejará de aparecer en ventas. El historial se conserva.`, 'Desactivar'))) return;
+  run(async () => { await API.save(table, { ID: id, [field]: !x[field] }); await renderCatalog(); });
+}
+
+/* ============ Bloque 3: Pantalla de venta ============ */
+const P = { cart: [], canal: 'Mostrador', mesa: '', cliente: '', dir: '', envio: 0, nota: '', descCuenta: null, authPin: '', cat: '', q: '', prods: [], cats: [], props: [] };
+const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+const isMgr = () => ['Admin', 'Gerente'].includes(S.user.rol);
+
+// Misma lógica que el servidor (el servidor es quien manda; esto es para mostrar)
+function calc() {
+  const L = P.cart.map(c => { const bruto = r2(c.precio * c.qty); const d = c.cortesia ? bruto : Math.min(bruto, c.desc || 0); return { ...c, bruto, d, dc: 0 }; });
+  const base = r2(L.reduce((s, l) => s + l.bruto - l.d, 0)), D = P.descCuenta; let dcT = 0;
+  if (D && D.valor > 0 && base > 0) dcT = D.tipo === 'pct' ? r2(base * Math.min(100, D.valor) / 100) : Math.min(base, r2(D.valor));
+  const act = L.filter(l => l.bruto - l.d > 0); let rest = dcT;
+  act.forEach((l, i) => { const n = l.bruto - l.d; l.dc = i === act.length - 1 ? Math.min(n, rest) : Math.min(n, rest, r2(dcT * n / base)); rest = r2(rest - l.dc); });
+  L.forEach(l => l.neto = r2(l.bruto - l.d - l.dc));
+  const envio = P.canal === 'Delivery' ? Math.max(0, r2(P.envio)) : 0;
+  const total = r2(L.reduce((s, l) => s + l.neto, 0) + envio);
+  const por = {}; L.forEach(l => por[l.propId] = r2((por[l.propId] || 0) + l.neto));
+  if (envio) { const e = S.config.propietario_envios || 'P-001'; por[e] = r2((por[e] || 0) + envio); }
+  return { L, subtotal: r2(L.reduce((s, l) => s + l.bruto, 0)), desc: r2(L.reduce((s, l) => s + l.d, 0) + dcT), envio, total, por };
+}
+function resetP() { Object.assign(P, { cart: [], canal: 'Mostrador', mesa: '', cliente: '', dir: '', envio: 0, nota: '', descCuenta: null, authPin: '', sesion: null, fresh: false, snap: '' }); }
+const cartFromItems = its => its.map(i => ({ uid: i.uid, id: i.ProductoID, nombre: i.Producto, precio: i.Precio, propId: i.PropietarioID || (P.prods.find(p => p.ID === i.ProductoID) || {}).PropietarioID, libre: !!i.Libre, qty: i.Cantidad, nota: i.Nota, desc: i.Descuento || 0, cortesia: !!i.Cortesia, estado: i.Estado, cat: i.Categoria }));
+async function renderVenta() {
+  const ses = location.hash === '#cuenta';
+  if (ses && !P.sesion) { location.hash = 'mesas'; return; }
+  if (!ses && P.sesion) resetP();
+  $('view').innerHTML = '<p class="muted">Cargando…</p>';
+  try { [P.prods, P.cats, P.props] = await Promise.all([API.list('Productos'), API.list('Categorias'), API.list('Propietarios')]); } catch (e) { return toast(e.message, 'error'); }
+  if (ses && P.fresh) { P.cart = cartFromItems(P.sesion.Items); P.snap = JSON.stringify(P.cart); P.fresh = false; }
+  const head = ses ? `<div class="bar"><button class="ghost" onclick="volverMesas()">← Volver</button><b class="h2" style="margin:0">${P.canal === 'Mesa' ? 'Mesa ' + esc(P.mesa) : 'Delivery'}</b><span class="pill" id="pst"></span><label class="sub" style="margin-left:auto"><input type="checkbox" style="width:auto" ${localStorage.getItem('pos_comanda') === '0' ? '' : 'checked'} onchange="localStorage.setItem('pos_comanda',this.checked?'1':'0')"> Imprimir comanda</label></div>` : '';
+  $('view').innerHTML = head + `<div class="pos"><div><div class="bar"><input id="pq" placeholder="Buscar producto" oninput="P.q=this.value;drawGrid()"><button class="ghost" style="flex:none" onclick="productoLibre()">+ Producto libre</button></div><div class="chips" id="pchips"></div><div class="pgrid" id="pgrid"></div></div><div class="pos-r" id="pcart"></div></div>`;
+  drawChips(); drawGrid(); drawCart();
+  if (S.user.rol !== 'Mesero') API.call('turnoActual').then(r => { if (!r.turno) toast('La caja está cerrada. Abre un turno en Caja para poder cobrar.', 'error'); }).catch(() => {});
+}
+function drawChips() { $('pchips').innerHTML = [['', 'Todo']].concat(P.cats.filter(c => c.Activo).sort((a, b) => a.Orden - b.Orden).map(c => [c.ID, c.Nombre])).map(c => `<button class="${P.cat === c[0] ? 'on' : ''}" onclick="P.cat='${c[0]}';drawChips();drawGrid()">${esc(c[1])}</button>`).join(''); }
+function drawGrid() {
+  const q = P.q.toLowerCase(), rows = P.prods.filter(p => p.Activo && (!P.cat || p.Categoria === P.cat) && (!q || String(p.Nombre).toLowerCase().includes(q)));
+  $('pgrid').innerHTML = rows.map(p => `<button class="prod" ${p.Disponible ? '' : 'disabled'} onclick="addItem('${p.ID}')">${esc(p.Nombre)}<span>${money(p.Precio)}</span><small>${p.Disponible ? esc(nameOf(P.props, p.PropietarioID)) : 'Agotado'}</small></button>`).join('') || '<p class="muted">No hay productos. Agrégalos en Catálogo.</p>';
+}
+function addItem(id) {
+  const p = P.prods.find(x => x.ID === id), c = P.cart.find(x => x.id === id && !x.nota && !x.desc && !x.cortesia && (!x.estado || x.estado === 'Pendiente'));
+  if (c) c.qty++; else P.cart.push({ id, nombre: p.Nombre, precio: Number(p.Precio), propId: p.PropietarioID, qty: 1, nota: '', desc: 0, cortesia: false });
+  drawCart();
+}
+function drawCart() {
+  const T = calc(), prop = id => nameOf(P.props, id), ses = P.sesion, pend = l => !l.estado || l.estado === 'Pendiente';
+  if ($('pst') && ses) $('pst').innerHTML = `<b></b>${ses.SesionID ? esc(ses.Estado) : 'Nueva'}`;
+  $('pcart').innerHTML = `<div>${webBanner(ses)}${ses ? '' : `<div class="seg">${['Mostrador', 'Delivery'].map(c => `<button class="${P.canal === c ? 'on' : ''}" onclick="P.canal='${c}';drawCart()">${c}</button>`).join('')}</div>`}
+  ${!ses && P.canal === 'Mesa' ? `<input style="margin-top:8px" placeholder="Mesa" value="${esc(P.mesa)}" oninput="P.mesa=this.value">` : ''}
+  ${P.canal === 'Delivery' ? `<input style="margin-top:8px" placeholder="Cliente" value="${esc(P.cliente)}" oninput="P.cliente=this.value"><input style="margin-top:6px" placeholder="Dirección" value="${esc(P.dir)}" oninput="P.dir=this.value"><input style="margin-top:6px" type="number" min="0" inputmode="decimal" placeholder="Costo de envío" value="${P.envio || ''}" oninput="P.envio=Number(this.value)||0;drawTotals()">` : ''}</div>
+  <div class="cart">${T.L.map((l, i) => `<div class="line"><div class="l1"><span>${pend(l) ? '' : l.qty + '× '}${esc(l.nombre)} ${pend(l) ? '' : `<span class="badge ${l.estado === 'Listo' ? 'ok' : ''}">${l.estado}</span>`}</span><span>${money(l.neto + l.dc)}</span></div><div class="sub">${esc(prop(l.propId))}${l.libre ? ' · Libre' : ''}${l.nota ? ' · ' + esc(l.nota) : ''}${l.cortesia ? ' · Cortesía' : l.desc ? ' · Desc. ' + money(l.desc) : ''}</div><div class="l2">${pend(l) ? `<span class="qty"><button class="ghost mini" onclick="qty(${i},-1)">−</button>${l.qty}<button class="ghost mini" onclick="qty(${i},1)">+</button></span><button class="mini ghost" onclick="lineNote(${i})">Nota</button>` : ''}<button class="mini ghost" onclick="lineDisc(${i})">Desc.</button><button class="mini ghost" onclick="lineGift(${i})">Cortesía</button>${l.estado === 'Listo' ? `<button class="mini" onclick="entregarItem('${l.uid}')">Entregado</button>` : ''}${!l.estado || ['Pendiente', 'Nuevo'].includes(l.estado) ? `<button class="mini ghost" onclick="P.cart.splice(${i},1);drawCart()">Quitar</button>` : ''}</div></div>`).join('') || '<p class="muted" style="padding:14px 0">Toca un producto para agregarlo.</p>'}</div>
+  <div id="ptot"></div>`;
+  drawTotals();
+}
+function drawTotals() {
+  const T = calc(), held = JSON.parse(localStorage.getItem('pos_held') || '[]'), el = $('ptot'), ses = P.sesion; if (!el) return;
+  const canPay = S.user.rol !== 'Mesero';
+  const acts = ses
+    ? `<button class="ghost mini" onclick="accountDisc()">Descuento a la cuenta</button><button class="ghost mini" onclick="guardarUI()">Guardar</button><button class="mini" onclick="enviarCocina()">Enviar a cocina</button>${P.canal === 'Mesa' ? (ses.Estado === 'PideCuenta' ? '<button class="ghost mini" onclick="pedirCuenta(false)">Reabrir cuenta</button>' : '<button class="ghost mini" onclick="pedirCuenta(true)">Pedir cuenta</button>') : (ses.Estado === 'EnCamino' ? `<span class="badge ok">En camino: ${esc(ses.Repartidor)}</span>` : '<button class="ghost mini" onclick="salidaReparto()">Salió a reparto</button>')}<button class="ghost mini" onclick="cancelarCuenta()">Cancelar cuenta</button>`
+    : `<button class="ghost mini" onclick="accountDisc()">Descuento a la cuenta</button><button class="ghost mini" onclick="holdSale()">Poner en espera</button>${held.length ? `<button class="ghost mini" onclick="recallSale()">Recuperar (${held.length})</button>` : ''}<button class="ghost mini" onclick="clearCart()">Vaciar</button>`;
+  el.innerHTML = `<div class="tot"><span>Subtotal</span><span>${money(T.subtotal)}</span></div>${T.desc ? `<div class="tot"><span>Descuentos</span><span>−${money(T.desc)}</span></div>` : ''}${T.envio ? `<div class="tot"><span>Envío</span><span>${money(T.envio)}</span></div>` : ''}<div class="tot big"><span>Total</span><span>${money(T.total)}</span></div>
+  ${Object.keys(T.por).length > 1 ? `<div class="sub" style="margin:6px 0">${Object.entries(T.por).map(([k, v]) => `${esc(nameOf(P.props, k))}: ${money(v)}`).join(' · ')}</div>` : ''}
+  <div class="bar" style="margin:10px 0 8px">${acts}</div>
+  ${canPay ? `<button style="width:100%;padding:14px;font-size:1.05rem" ${T.L.length ? '' : 'disabled'} onclick="cobrar()">Cobrar ${money(T.total)}</button>` : ''}`;
+}
+function qty(i, d) { P.cart[i].qty += d; if (P.cart[i].qty < 1) P.cart.splice(i, 1); drawCart(); }
+async function lineNote(i) { const v = await formModal('Nota del platillo', [{ k: 'n', label: 'Nota', def: P.cart[i].nota }]); if (v) { P.cart[i].nota = v.n; drawCart(); } }
+async function needAuth() {
+  if (isMgr() || P.authPin) return true;
+  const v = await formModal('Autorización', [{ k: 'pin', label: 'PIN de Admin o Gerente', type: 'password', req: true, attrs: 'inputmode="numeric" maxlength="4"' }], {}, 'Los descuentos y cortesías requieren autorización.');
+  if (!v) return false;
+  try { const who = await API.call('verifyAuth', { pin: v.pin }); P.authPin = v.pin; toast('Autorizado por ' + who); return true; } catch (e) { toast(e.message, 'error'); return false; }
+}
+async function lineDisc(i) { if (!(await needAuth())) return; const v = await formModal('Descuento al platillo', [{ k: 'm', label: 'Monto a descontar ($)', type: 'number', def: P.cart[i].desc, attrs: 'step="0.5" min="0"' }], {}, 'Lo absorbe el propietario del platillo.'); if (v) { P.cart[i].desc = v.m; P.cart[i].cortesia = false; drawCart(); } }
+async function lineGift(i) { if (!(await needAuth())) return; P.cart[i].cortesia = !P.cart[i].cortesia; drawCart(); }
+async function accountDisc() {
+  if (!(await needAuth())) return;
+  const v = await formModal('Descuento a la cuenta', [{ k: 'tipo', label: 'Tipo', type: 'select', opts: [['pct', 'Porcentaje (%)'], ['monto', 'Monto ($)']] }, { k: 'valor', label: 'Valor', type: 'number', attrs: 'step="0.5" min="0"' }], P.descCuenta || {}, 'Se reparte entre los propietarios según lo que aportó cada uno. El envío no se descuenta.');
+  if (v) { P.descCuenta = v.valor > 0 ? v : null; drawCart(); }
+}
+function clearCart() { Object.assign(P, { cart: [], mesa: '', cliente: '', dir: '', envio: 0, nota: '', descCuenta: null, authPin: '' }); drawCart(); }
+function holdSale() {
+  if (!P.cart.length) return; const h = JSON.parse(localStorage.getItem('pos_held') || '[]');
+  h.push({ t: Date.now(), s: { cart: P.cart, canal: P.canal, mesa: P.mesa, cliente: P.cliente, dir: P.dir, envio: P.envio, descCuenta: P.descCuenta } });
+  localStorage.setItem('pos_held', JSON.stringify(h)); clearCart(); toast('Venta en espera (solo en este dispositivo)');
+}
+function recallSale() {
+  const h = JSON.parse(localStorage.getItem('pos_held') || '[]'), x = h.shift(); if (!x) return;
+  if (P.cart.length) return toast('Primero cobra o vacía la venta actual', 'error');
+  Object.assign(P, x.s); localStorage.setItem('pos_held', JSON.stringify(h)); drawCart();
+}
+
+/* ---- Cobro ---- */
+async function cobrar() {
+  const T = calc();
+  if ((T.desc > 0 || P.cart.some(libreAlto)) && !(await needAuth())) return;
+  if (P.canal === 'Mesa' && !P.mesa.trim()) return toast('Indica el número de mesa', 'error');
+  if (P.canal === 'Delivery' && (!P.dir.trim() || !P.cliente.trim())) return toast('Delivery necesita cliente y dirección', 'error');
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal pay" role="dialog" aria-modal="true"><h3>Cobrar ${money(T.total)}</h3>
+  ${['Efectivo', 'Tarjeta', 'Transferencia'].map(m => `<label><span>${m}</span><input type="number" min="0" step="0.5" inputmode="decimal" data-m="${m}" placeholder="0"></label>`).join('')}
+  <div class="bar" style="margin-top:10px"><button class="mini ghost" id="px">Exacto en efectivo</button>${[100, 200, 500].map(n => `<button class="mini ghost pq" data-n="${n}">$${n}</button>`).join('')}</div>
+  <div class="tot" style="margin-top:8px"><span id="plabel">Falta</span><b id="pval"></b></div>
+  <div class="bar" style="margin-top:6px"><span class="sub">Dividir entre</span><input id="psplit" type="number" min="1" value="1" style="width:70px;flex:none"><span class="sub" id="pper"></span></div>
+  <label style="font-weight:500"><input type="checkbox" id="pprint" style="width:auto" ${localStorage.getItem('pos_print') === '0' ? '' : 'checked'}> Imprimir ticket</label>
+  <div class="err" id="perr"></div><div class="row"><button class="ghost" id="pno">Cancelar</button><button id="pok" disabled>Confirmar cobro</button></div></div>`;
+  const ins = [...bg.querySelectorAll('input[data-m]')], val = m => Number(ins.find(i => i.dataset.m === m).value) || 0;
+  const upd = () => {
+    const ef = val('Efectivo'), paid = ef + val('Tarjeta') + val('Transferencia'), cambio = r2(paid - T.total), ok = paid >= T.total && cambio <= ef;
+    bg.querySelector('#plabel').textContent = cambio >= 0 ? 'Cambio' : 'Falta'; bg.querySelector('#pval').textContent = money(Math.abs(cambio));
+    bg.querySelector('#perr').textContent = paid >= T.total && cambio > ef ? 'El cambio solo puede salir de efectivo.' : '';
+    bg.querySelector('#pok').disabled = !ok; const n = Math.max(1, Number(bg.querySelector('#psplit').value) || 1); bg.querySelector('#pper').textContent = n > 1 ? `${money(T.total / n)} por persona` : '';
+  };
+  bg.addEventListener('input', upd);
+  bg.querySelector('#px').onclick = () => { ins[0].value = T.total; upd(); };
+  bg.querySelectorAll('.pq').forEach(b => b.onclick = () => { ins[0].value = b.dataset.n; upd(); });
+  bg.querySelector('#pno').onclick = () => bg.remove();
+  bg.querySelector('#pok').onclick = async () => {
+    const btn = bg.querySelector('#pok'); btn.disabled = true; btn.textContent = 'Registrando…';
+    localStorage.setItem('pos_print', bg.querySelector('#pprint').checked ? '1' : '0');
+    try {
+      const v = await API.call('registrarVenta', { canal: P.canal, mesa: P.mesa, cliente: P.cliente, direccion: P.dir, envio: P.envio, descCuenta: P.descCuenta, authPin: P.authPin, nota: P.nota, sesionId: P.sesion ? P.sesion.SesionID : '',
+        items: P.cart.map(c => ({ ProductoID: c.id, Producto: c.nombre, Precio: c.precio, PropietarioID: c.propId, Cantidad: c.qty, Nota: c.nota, Descuento: c.desc, Cortesia: c.cortesia })),
+        pagos: ins.map(i => ({ metodo: i.dataset.m, monto: Number(i.value) || 0 })) });
+      bg.remove(); toast(`Venta #${v.folio} registrada` + (v.cambio ? ` · Cambio ${money(v.cambio)}` : ''));
+      if (localStorage.getItem('pos_print') !== '0') printTicket(v);
+      if (P.sesion) { resetP(); location.hash = 'mesas'; } else { clearCart(); API.list('Productos').then(r => { P.prods = r; drawGrid(); }); }
+    } catch (e) { btn.disabled = false; btn.textContent = 'Confirmar cobro'; bg.querySelector('#perr').textContent = e.message; }
+  };
+  document.body.append(bg); ins[0].focus();
+}
+function printTicket(v) {
+  const c = S.config, f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0';
+  const rows = v.lineas.map(l => `<tr><td>${l.Cantidad}x ${esc(l.Producto)}${l.Nota ? `<br><i>${esc(l.Nota)}</i>` : ''}</td><td class="r">${money(l.TotalNeto)}</td></tr>`).join('');
+  f.srcdoc = `<html><head><style>@page{margin:0}body{font:12px monospace;width:${tw()};margin:3mm}h1{font-size:15px;text-align:center;margin:0}p{margin:2px 0;text-align:center}table{width:100%;border-collapse:collapse;margin:6px 0}.r{text-align:right}hr{border:0;border-top:1px dashed #000}</style></head><body><h1>${esc(c.negocio)}</h1><p>${esc(c.subtitulo)}</p><p>${esc(c.direccion || '')}</p><p>${esc(c.telefono)}</p>${c.rfc ? `<p>RFC ${esc(c.rfc)}</p>` : ''}<hr>${v.cancelada ? '<p><b>*** CANCELADA ***</b></p>' : ''}${v.reimp ? '<p><b>*** REIMPRESIÓN ***</b></p>' : ''}<p>Folio #${v.folio} · ${new Date(v.fecha).toLocaleString('es-MX')}</p><p>${v.canal}${v.mesa ? ' ' + esc(v.mesa) : ''}${v.canal !== 'Delivery' && v.cliente ? ' · ' + esc(v.cliente) : ''}</p>${v.canal === 'Delivery' ? `<hr><div style="text-align:left"><b>CLIENTE:</b> ${esc(v.cliente)}<br><b>DIRECCIÓN:</b> ${esc(v.direccion || '')}</div>` : ''}<hr><table>${rows}</table><hr><table>${v.descuento ? `<tr><td>Descuento</td><td class="r">-${money(v.descuento)}</td></tr>` : ''}<tr><td><b>TOTAL</b></td><td class="r"><b>${money(v.total)}</b></td></tr>${v.pagos.map(p => `<tr><td>${p.metodo}</td><td class="r">${money(p.monto)}</td></tr>`).join('')}${v.cambio ? `<tr><td>Cambio</td><td class="r">${money(v.cambio)}</td></tr>` : ''}</table><hr><p>${esc(c.pie_ticket)}</p></body></html>`;
+  f.onload = () => { f.contentWindow.print(); setTimeout(() => f.remove(), 2000); }; document.body.append(f);
+}
+
+/* ============ Bloque 4: Mesas, cocina y delivery ============ */
+let SES = [];
+const KD = { last: null };
+const poll = (fn, ms) => { clearInterval(window._poll); window._poll = setInterval(() => { if (!document.hidden) fn(); }, ms); };
+const loadSes = async () => { SES = await API.call('sesionesActivas'); };
+const mins = t => Math.max(0, Math.floor((Date.now() - new Date(t).getTime()) / 60000));
+const sesTotal = x => r2(x.Items.reduce((t, i) => t + (i.Cortesia ? 0 : Math.max(0, i.Precio * i.Cantidad - (i.Descuento || 0))), 0) + (x.Canal === 'Delivery' ? Number(x.Envio) || 0 : 0));
+function deliveryEstado(x) {
+  if (x.Estado === 'EnCamino') return 'En camino';
+  const sent = x.Items.filter(i => i.Estado !== 'Pendiente');
+  if (!sent.length) return 'Capturando';
+  return sent.every(i => ['Listo', 'Entregado'].includes(i.Estado)) ? 'Lista para salir' : 'En cocina';
+}
+async function renderMesas() {
+  $('view').innerHTML = '<p class="muted">Cargando…</p>';
+  const draw = async () => { try { await loadSes(); } catch (e) { return toast(e.message, 'error'); } if (location.hash === '#mesas') drawMesas(); };
+  await draw(); poll(draw, 10000);
+}
+function drawMesas() {
+  const n = Number(S.config.num_mesas) || 10, names = Array.from({ length: n }, (_, i) => String(i + 1));
+  SES.filter(x => x.Canal === 'Mesa' && !names.includes(String(x.Mesa))).forEach(x => names.push(String(x.Mesa)));
+  const webs = SES.filter(x => x.Canal === 'Delivery' && x.Estado === 'PorAprobar'), del = SES.filter(x => x.Canal === 'Delivery' && x.Estado !== 'PorAprobar');
+  $('view').innerHTML = `${webSection(webs)}<div class="h2">Mesas</div><div class="mgrid">${names.map(m => {
+    const x = SES.find(s => s.Canal === 'Mesa' && String(s.Mesa) === m), listo = x && x.Items.some(i => i.Estado === 'Listo');
+    return `<button class="mesa ${x ? (x.Estado === 'PideCuenta' ? 'pc' : 'oc') : ''} ${listo ? 'lt' : ''}" onclick="abrirMesa('${esc(m)}')"><b>${esc(m)}</b>${x ? `<span>${money(sesTotal(x))}</span><small>${x.Estado === 'PideCuenta' ? 'Pide cuenta' : 'Abierta'} · ${mins(x.Creada)} min${listo ? ' · ¡Listo!' : ''}</small>` : '<small>Libre</small>'}</button>`;
+  }).join('')}</div>
+  <div class="bar"><div class="h2" style="margin:0">Delivery</div><button onclick="nuevoDelivery()">Nuevo delivery</button></div>
+  <div class="mgrid">${del.map(x => `<button class="mesa oc" onclick="abrirSesion('${x.SesionID}')"><b style="font-size:1rem">${esc(x.Cliente)}</b><span>${money(sesTotal(x))}</span><small>${deliveryEstado(x)} · ${mins(x.Creada)} min</small></button>`).join('') || '<p class="muted">Sin pedidos a domicilio abiertos.</p>'}</div>`;
+}
+function openSesion(x) {
+  Object.assign(P, { sesion: x, fresh: true, canal: x.Canal, mesa: String(x.Mesa || ''), cliente: x.Cliente || '', dir: x.Direccion || '', envio: Number(x.Envio) || 0, descCuenta: x.DescCuenta || null, authPin: '', nota: x.Nota || '', cat: '', q: '' });
+  location.hash === '#cuenta' ? route() : (location.hash = 'cuenta');
+}
+const abrirSesion = id => openSesion(SES.find(x => x.SesionID === id));
+const abrirMesa = m => openSesion(SES.find(x => x.Canal === 'Mesa' && String(x.Mesa) === m) || { SesionID: '', Mesa: m, Canal: 'Mesa', Items: [], Estado: 'Abierta' });
+const nuevoDelivery = () => openSesion({ SesionID: '', Mesa: '', Canal: 'Delivery', Items: [], Estado: 'Abierta', Cliente: '', Direccion: '', Envio: 0 });
+
+/* ---- Editor de cuenta ---- */
+const sesPayload = (extra = {}) => ({ id: P.sesion.SesionID, mesa: P.mesa, canal: P.canal, cliente: P.cliente, direccion: P.dir, envio: P.envio, nota: P.nota, descCuenta: P.descCuenta, authPin: P.authPin, items: P.cart.map(c => ({ uid: c.uid || '', ProductoID: c.id, Producto: c.nombre, Precio: c.precio, PropietarioID: c.propId, Cantidad: c.qty, Nota: c.nota, Descuento: c.desc, Cortesia: c.cortesia })), ...extra });
+async function guardarSesion(enviar) {
+  const r = await API.call('sesionGuardar', sesPayload({ enviar: !!enviar }));
+  P.sesion = r.ses; P.cart = cartFromItems(r.ses.Items); P.snap = JSON.stringify(P.cart); drawCart(); return r;
+}
+const guardarUI = () => run(() => guardarSesion(false), 'Cuenta guardada');
+function enviarCocina() {
+  if (!P.cart.some(c => !c.estado || c.estado === 'Pendiente')) return toast('No hay platillos nuevos por enviar', 'error');
+  run(async () => { const r = await guardarSesion(true); if (localStorage.getItem('pos_comanda') !== '0') printComanda(r.ses, r.nuevos); }, 'Enviado a cocina');
+}
+function pedirCuenta(pedir) {
+  run(async () => { await guardarSesion(false); await API.call('sesionEstado', { id: P.sesion.SesionID, estado: pedir ? 'PideCuenta' : 'Abierta' }); volverMesas(true); }, pedir ? 'Cuenta solicitada' : 'Cuenta reabierta');
+}
+async function salidaReparto() {
+  const v = await formModal('Salida a reparto', [{ k: 'r', label: 'Repartidor', req: true }]); if (!v) return;
+  run(async () => { await guardarSesion(false); P.sesion = await API.call('sesionEstado', { id: P.sesion.SesionID, estado: 'EnCamino', repartidor: v.r }); drawCart(); }, 'Pedido en camino. Cóbralo al entregar.');
+}
+function entregarItem(uid) { run(async () => { P.sesion = await API.call('sesionItems', { id: P.sesion.SesionID, uids: [uid], estado: 'Entregado' }); P.cart = cartFromItems(P.sesion.Items); P.snap = JSON.stringify(P.cart); drawCart(); }); }
+async function cancelarCuenta() {
+  if (!P.sesion.SesionID) return volverMesas(true);
+  const v = await formModal('Cancelar cuenta', [{ k: 'm', label: 'Motivo', req: true }], {}, 'Si ya hay platillos en cocina, solo un Admin o Gerente puede cancelarla.'); if (!v) return;
+  run(async () => { await API.call('sesionCancelar', { id: P.sesion.SesionID, motivo: v.m }); volverMesas(true); }, 'Cuenta cancelada');
+}
+async function volverMesas(force) {
+  if (!force && JSON.stringify(P.cart) !== P.snap && !(await confirmModal('Cambios sin guardar', 'Si sales ahora se pierden los cambios de esta cuenta.', 'Salir sin guardar'))) return;
+  resetP(); location.hash = 'mesas';
+}
+function printFrame(html) { const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0'; f.srcdoc = html; f.onload = () => { f.contentWindow.print(); setTimeout(() => f.remove(), 2000); }; document.body.append(f); }
+function printComanda(x, nuevos) {
+  const its = x.Items.filter(i => nuevos.includes(i.uid)); if (!its.length) return;
+  printFrame(`<html><head><style>@page{margin:0}body{font:14px monospace;width:${tw()};margin:3mm}h1{font-size:18px;margin:0}hr{border:0;border-top:1px dashed #000}</style></head><body><h1>${x.Canal === 'Mesa' ? 'MESA ' + esc(x.Mesa) : 'DELIVERY ' + esc(x.Cliente)}</h1>${x.Canal === 'Delivery' ? '<div>' + esc(x.Direccion) + '</div>' : ''}<div>${new Date().toLocaleTimeString('es-MX')} · ${esc(S.user.nombre)}</div><hr>${its.map(i => `<div><b>${i.Cantidad}x ${esc(i.Producto)}</b>${i.Nota ? `<br>» ${esc(i.Nota)}` : ''}</div>`).join('')}</body></html>`);
+}
+
+/* ---- Pantalla de cocina ---- */
+async function renderCocina() {
+  $('view').innerHTML = '<div class="bar"><select id="kcat" onchange="drawCocina()"><option value="">Todas las categorías</option></select></div><div class="kds" id="kds"></div>';
+  try { (await API.list('Categorias')).filter(c => c.Activo).forEach(c => $('kcat').insertAdjacentHTML('beforeend', `<option value="${esc(c.ID)}">${esc(c.Nombre)}</option>`)); } catch (e) {}
+  KD.last = null;
+  const draw = async () => { try { await loadSes(); setConn(true); } catch (e) { return setConn(false); } if (location.hash === '#cocina') drawCocina(); };
+  await draw(); poll(draw, 6000);
+}
+function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(); setTimeout(() => { o.stop(); a.close(); }, 250); } catch (e) {} }
+function drawCocina() {
+  const f = $('kcat').value, live = ['Nuevo', 'Preparando', 'Listo'];
+  const tk = SES.map(x => ({ x, its: x.Items.filter(i => live.includes(i.Estado) && (!f || i.Categoria === f)) })).filter(t => t.its.length).sort((a, b) => Math.min(...a.its.map(i => i.Hora)) - Math.min(...b.its.map(i => i.Hora)));
+  const nuevos = tk.reduce((n, t) => n + t.its.filter(i => i.Estado === 'Nuevo').length, 0);
+  if (KD.last !== null && nuevos > KD.last) beep(); KD.last = nuevos;
+  $('kds').innerHTML = tk.map(({ x, its }) => {
+    const m = Math.floor((Date.now() - Math.min(...its.map(i => i.Hora))) / 60000), cls = m >= 20 ? 'late' : m >= 10 ? 'warn' : '';
+    return `<div class="tk ${cls}"><h4><span>${x.Canal === 'Mesa' ? 'Mesa ' + esc(x.Mesa) : 'Delivery · ' + esc(x.Cliente)}</span><span>${m} min</span></h4>${its.map(i => `<button class="kit ${i.Estado}" onclick="kItem('${x.SesionID}','${i.uid}')"><span>${i.Cantidad}× ${esc(i.Producto)}${i.Nota ? `<br><small>» ${esc(i.Nota)}</small>` : ''}</span><b>${i.Estado}</b></button>`).join('')}<div class="bar" style="margin:10px 0 0"><button class="mini ghost" onclick="kAll('${x.SesionID}','Preparando')">Todo en preparación</button><button class="mini" onclick="kAll('${x.SesionID}','Listo')">Todo listo</button></div></div>`;
+  }).join('') || '<p class="muted">No hay pedidos pendientes. Cuando envíen uno desde mesas, aparecerá aquí.</p>';
+}
+const NEXT = { Nuevo: 'Preparando', Preparando: 'Listo', Listo: 'Entregado' };
+async function kSend(id, uids, estado) { try { await API.call('sesionItems', { id, uids, estado }); await loadSes(); drawCocina(); } catch (e) { toast(e.message, 'error'); } }
+function kItem(id, uid) { const i = SES.find(x => x.SesionID === id).Items.find(i => i.uid === uid); kSend(id, [uid], NEXT[i.Estado]); }
+function kAll(id, estado) {
+  const f = $('kcat').value, its = SES.find(x => x.SesionID === id).Items.filter(i => (!f || i.Categoria === f) && (estado === 'Listo' ? ['Nuevo', 'Preparando'] : ['Nuevo']).includes(i.Estado));
+  if (its.length) kSend(id, its.map(i => i.uid), estado);
+}
+
+/* ============ Bloque 5: Caja, corte y liquidación ============ */
+const CJ = { tab: 'turno', cur: null, liq: null, hist: [] };
+const DENOMS = [1000, 500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5];
+const fdate = t => new Date(t).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+async function renderCaja() {
+  $('view').innerHTML = '<p class="muted">Cargando…</p>';
+  try { CJ.cur = await API.call('turnoActual'); if (CJ.tab === 'liq') CJ.liq = await API.call('liquidacion'); if (CJ.tab === 'hist') CJ.hist = (await API.list('Turnos')).filter(t => t.Estatus === 'Cerrado').reverse(); } catch (e) { return toast(e.message, 'error'); }
+  drawCaja();
+}
+const cajaTab = t => { CJ.tab = t; renderCaja(); };
+function drawCaja() {
+  const tabs = [['turno', 'Turno actual'], ['liq', 'Liquidación'], ['hist', 'Historial']];
+  const body = CJ.tab === 'turno' ? drawTurno() : CJ.tab === 'liq' ? drawLiq() : drawHist();
+  $('view').innerHTML = `<div class="tabs">${tabs.map(t => `<button class="${CJ.tab === t[0] ? 'on' : ''}" onclick="cajaTab('${t[0]}')">${t[1]}</button>`).join('')}</div>${body}`;
+}
+function drawTurno() {
+  const { turno, resumen: r } = CJ.cur;
+  if (!turno) return `<div class="card" style="max-width:460px"><h3>Caja cerrada</h3><p>Abre un turno para empezar a cobrar. Cuenta el efectivo con el que inicias.</p><button style="margin-top:14px" onclick="abrirCaja()">Abrir caja</button></div>`;
+  const k = (l, v) => `<div class="card kpi"><span>${l}</span><b>${money(v)}</b></div>`;
+  return `<div class="bar"><span class="pill ok"><b></b>${esc(turno.ID)} · abierto ${fdate(turno.Apertura)} por ${esc(turno.Usuario)}</span><span style="margin-left:auto"></span><button class="ghost" onclick="movCaja()">Entrada / salida de efectivo</button><button onclick="cerrarCaja()">Cerrar caja (corte)</button></div>
+  <div class="grid" style="margin-bottom:16px">${k('Efectivo esperado en caja', r.esperado)}${k(`Ventas (${r.nVentas})`, r.ventasTotal)}${k('Efectivo cobrado', r.metodos.Efectivo)}${k('Tarjeta', r.metodos.Tarjeta)}${k('Transferencia', r.metodos.Transferencia)}</div>
+  <div class="card"><h3>Cómo se calcula el efectivo esperado</h3><div class="tot"><span>Fondo inicial</span><span>${money(r.fondo)}</span></div><div class="tot"><span>+ Ventas en efectivo (sin cambio ni devoluciones)</span><span>${money(r.metodos.Efectivo)}</span></div><div class="tot"><span>+ Entradas</span><span>${money(r.entradas)}</span></div><div class="tot"><span>− Salidas</span><span>${money(r.salidas)}</span></div><div class="tot"><span>− Pagos a propietarios en efectivo</span><span>${money(r.liqEfectivo)}</span></div><div class="tot big"><span>Esperado</span><span>${money(r.esperado)}</span></div></div>
+  <div class="h2" style="margin-top:18px">Movimientos del turno</div><div class="tw"><table class="table"><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Monto</th><th>Usuario</th></tr>${r.movimientos.map(m => `<tr><td>${fdate(m.Fecha)}</td><td>${m.Tipo}</td><td>${esc(m.Concepto)}</td><td>${money(m.Monto)}</td><td>${esc(m.Usuario)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Sin movimientos.</td></tr>'}</table></div>`;
+}
+async function abrirCaja() {
+  const v = await formModal('Abrir caja', [{ k: 'fondo', label: 'Fondo inicial en efectivo ($)', type: 'number', def: S.config.fondo_caja || 0, attrs: 'step="0.5" min="0" inputmode="decimal"' }]); if (!v) return;
+  run(async () => { await API.call('abrirTurno', { fondo: v.fondo }); renderCaja(); }, 'Caja abierta');
+}
+async function movCaja() {
+  const v = await formModal('Movimiento de efectivo', [{ k: 'tipo', label: 'Tipo', type: 'select', opts: [['Salida', 'Salida (gasto, retiro)'], ['Entrada', 'Entrada (aporte)']] }, { k: 'monto', label: 'Monto ($)', type: 'number', req: true, attrs: 'step="0.5" min="0" inputmode="decimal"' }, { k: 'concepto', label: 'Concepto', req: true }]); if (!v) return;
+  run(async () => { await API.call('movimientoCaja', v); renderCaja(); }, 'Movimiento registrado');
+}
+function cerrarCaja() {
+  const r = CJ.cur.resumen, bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" style="max-width:520px;max-height:92vh;overflow:auto" role="dialog" aria-modal="true"><h3>Cerrar caja</h3><p class="muted">Cuenta billetes y monedas.</p><div class="den">${DENOMS.map(d => `<label>$${d}<input type="number" min="0" step="1" inputmode="numeric" data-d="${d}" placeholder="0"></label>`).join('')}</div>
+  <div class="tot big" style="margin-top:12px"><span>Contado</span><span id="cc">$0.00</span></div><div class="tot"><span>Esperado</span><span>${money(r.esperado)}</span></div><div class="tot"><span>Diferencia</span><b id="cd"></b></div>
+  <label style="display:block;margin-top:10px;font-weight:600">Nota (opcional)<input id="cn" style="margin-top:4px"></label><div class="err" id="ce"></div><div class="row"><button class="ghost" id="cno">Cancelar</button><button id="cok">Cerrar y generar corte</button></div></div>`;
+  const ins = [...bg.querySelectorAll('input[data-d]')], tot = () => r2(ins.reduce((t, i) => t + (Number(i.value) || 0) * Number(i.dataset.d), 0));
+  bg.addEventListener('input', () => { const c = tot(), d = r2(c - r.esperado); bg.querySelector('#cc').textContent = money(c); const e = bg.querySelector('#cd'); e.textContent = (d > 0 ? '+' : '') + money(d); e.style.color = d === 0 ? 'var(--brand)' : 'var(--chile)'; });
+  bg.querySelector('#cno').onclick = () => bg.remove();
+  bg.querySelector('#cok').onclick = async () => {
+    const den = {}; ins.forEach(i => { if (Number(i.value) > 0) den[i.dataset.d] = Number(i.value); });
+    const send = async forzar => API.call('cerrarTurno', { contado: tot(), denominaciones: den, nota: bg.querySelector('#cn').value, forzar });
+    try {
+      let res; try { res = await send(false); } catch (e) {
+        if (!e.message.startsWith('CUENTAS_ABIERTAS')) throw e;
+        if (!(await confirmModal('Hay cuentas abiertas', `Quedan ${e.message.split(':')[1]} cuenta(s) abiertas en mesas o delivery. Seguirán abiertas y se cobrarán en el siguiente turno.`, 'Cerrar de todos modos'))) return;
+        res = await send(true);
+      }
+      bg.remove(); showCorte(res); renderCaja();
+    } catch (e) { bg.querySelector('#ce').textContent = e.message; }
+  };
+  document.body.append(bg); ins[0].focus();
+}
+function showCorte(r) {
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" style="max-width:480px;max-height:92vh;overflow:auto"><h3>Corte ${esc(r.id)}</h3><p class="muted">${fdate(r.apertura)} → ${r.cierre ? fdate(r.cierre) : 'en curso'} · ${esc(r.usuario)}</p>
+  ${corteRows(r)}<div class="row"><button class="ghost" id="cx">Cerrar</button><button id="cp">Imprimir corte</button></div></div>`;
+  bg.querySelector('#cx').onclick = () => bg.remove(); bg.querySelector('#cp').onclick = () => printCorte(r); document.body.append(bg);
+}
+function corteRows(r) {
+  const t = (a, b, c) => `<div class="tot ${c || ''}"><span>${a}</span><span>${b}</span></div>`;
+  return t('Ventas (' + r.nVentas + ')', money(r.ventasTotal)) + t('Efectivo', money(r.metodos.Efectivo)) + t('Tarjeta', money(r.metodos.Tarjeta)) + t('Transferencia', money(r.metodos.Transferencia)) + '<hr style="border:0;border-top:1px solid var(--line);margin:8px 0">' +
+    (r.devoluciones ? t('Devoluciones / cancelaciones', '−' + money(r.devoluciones)) : '') + t('Fondo inicial', money(r.fondo)) + t('Entradas / Salidas', money(r.entradas) + ' / ' + money(r.salidas)) + t('Pagos a propietarios (efectivo)', money(r.liqEfectivo)) + t('Efectivo esperado', money(r.esperado), 'big') +
+    (r.contado !== undefined ? t('Efectivo contado', money(r.contado)) + t('Diferencia', (r.diferencia > 0 ? '+' : '') + money(r.diferencia), 'big') : '') +
+    '<div class="h2" style="margin-top:14px">Por propietario</div>' + r.props.map(p => t(esc(p.nombre) + (p.id === r.duenoId ? ' (dueño, incl. envíos)' : ''), money(p.vendido))).join('');
+}
+function printCorte(r) {
+  const row = (a, b) => `<tr><td>${a}</td><td style="text-align:right">${b}</td></tr>`;
+  printFrame(`<html><head><style>@page{margin:0}body{font:12px monospace;width:${tw()};margin:3mm}h1{font-size:15px;text-align:center;margin:0}table{width:100%;border-collapse:collapse}hr{border:0;border-top:1px dashed #000}</style></head><body><h1>${esc(S.config.negocio)}</h1><h1>CORTE ${esc(r.id)}</h1><div>${fdate(r.apertura)} → ${r.cierre ? fdate(r.cierre) : ''}<br>${esc(r.usuario)}</div><hr><table>${row('Ventas (' + r.nVentas + ')', money(r.ventasTotal))}${row('Efectivo', money(r.metodos.Efectivo))}${row('Tarjeta', money(r.metodos.Tarjeta))}${row('Transferencia', money(r.metodos.Transferencia))}</table><hr><table>${r.devoluciones ? row('Devoluciones', '-' + money(r.devoluciones)) : ''}${row('Fondo', money(r.fondo))}${row('Entradas', money(r.entradas))}${row('Salidas', money(r.salidas))}${row('Pagos propietarios', money(r.liqEfectivo))}${row('<b>Esperado</b>', '<b>' + money(r.esperado) + '</b>')}${r.contado !== undefined ? row('Contado', money(r.contado)) + row('<b>Diferencia</b>', '<b>' + money(r.diferencia) + '</b>') : ''}</table><hr><b>POR PROPIETARIO</b><table>${r.props.map(p => row(esc(p.nombre), money(p.vendido))).join('')}</table><br><br>Firma: ______________</body></html>`);
+}
+function drawHist() {
+  return `<div class="tw"><table class="table"><tr><th>Turno</th><th>Apertura</th><th>Cierre</th><th>Usuario</th><th>Esperado</th><th>Contado</th><th>Diferencia</th><th></th></tr>${CJ.hist.map(t => `<tr><td>${esc(t.ID)}</td><td>${fdate(t.Apertura)}</td><td>${fdate(t.Cierre)}</td><td>${esc(t.Usuario)}</td><td>${money(t.EfectivoEsperado)}</td><td>${money(t.EfectivoContado)}</td><td><span class="badge ${Number(t.Diferencia) === 0 ? 'ok' : 'warn'}">${money(t.Diferencia)}</span></td><td><button class="mini ghost" onclick="verCorte('${t.ID}')">Ver corte</button></td></tr>`).join('') || '<tr><td colspan="8" class="muted">Aún no hay turnos cerrados.</td></tr>'}</table></div>`;
+}
+const verCorte = id => run(async () => showCorte(await API.call('turnoResumen', { id })));
+
+/* ---- Liquidación por propietario ---- */
+function drawLiq() {
+  const L = CJ.liq, canPay = isMgr();
+  return `${L.turnoId ? '' : '<p class="muted" style="margin-bottom:10px">No hay turno abierto: solo ves saldos pendientes.</p>'}<div class="tw"><table class="table"><tr><th>Propietario</th><th>Vendido (turno)</th><th>Comisión</th><th>A pagar (turno)</th><th>Efectivo / Otros</th><th>Saldo pendiente</th><th></th></tr>${L.owners.map(o => { const t = o.turno || { vendido: 0, comision: 0, aPagar: 0, efectivo: 0, otros: 0 };
+    return `<tr><td><b>${esc(o.nombre)}</b>${o.dueno ? ' <span class="badge">Dueño · incluye envíos</span>' : ''}</td><td>${money(t.vendido)}</td><td>${o.dueno ? '—' : money(t.comision)}</td><td>${o.dueno ? '—' : money(t.aPagar)}</td><td class="muted">${o.dueno ? '—' : money(t.efectivo) + ' / ' + money(t.otros)}</td><td>${o.dueno ? '—' : `<b>${money(o.saldo)}</b>`}</td><td><button class="mini ghost" onclick="detalleProp('${o.id}')">Detalle</button>${!o.dueno && canPay && o.saldo > 0 ? `<button class="mini" onclick="pagarProp('${o.id}')">Registrar pago</button>` : ''}</td></tr>`; }).join('')}</table></div>
+  <p class="sub" style="margin-top:10px">“Efectivo / Otros” indica cuánto de lo vendido de cada propietario se cobró en efectivo y cuánto por tarjeta o transferencia: lo que no entró al cajón se le paga por transferencia. El saldo pendiente suma turnos cerrados y el actual, menos pagos ya registrados.</p>`;
+}
+function detalleProp(id) {
+  const o = CJ.liq.owners.find(x => x.id === id), t = o.turno; const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" style="max-width:480px;max-height:92vh;overflow:auto"><h3>${esc(o.nombre)}</h3>${t ? `<table class="table">${t.detalle.map(d => `<tr><td>${d.cant}× ${esc(d.producto)}</td><td class="muted">${d.desc ? 'Desc. −' + money(d.desc) : ''}</td><td style="text-align:right">${money(d.neto)}</td></tr>`).join('')}</table><div class="tot"><span>Vendido (neto de descuentos)</span><span>${money(t.vendido)}</span></div>${t.comision ? `<div class="tot"><span>Comisión</span><span>−${money(t.comision)}</span></div>` : ''}<div class="tot big"><span>A pagar</span><span>${money(t.aPagar)}</span></div>` : '<p class="muted">Sin ventas en el turno actual.</p>'}<div class="tot"><span>Saldo pendiente total</span><b>${money(o.saldo)}</b></div><div class="row"><button class="ghost" id="dx">Cerrar</button>${t ? '<button id="dp">Imprimir reporte</button>' : ''}</div></div>`;
+  bg.querySelector('#dx').onclick = () => bg.remove();
+  if (t) bg.querySelector('#dp').onclick = () => printFrame(`<html><head><style>@page{margin:0}body{font:12px monospace;width:${tw()};margin:3mm}h1{font-size:15px;text-align:center;margin:0}table{width:100%;border-collapse:collapse}hr{border:0;border-top:1px dashed #000}</style></head><body><h1>${esc(S.config.negocio)}</h1><h1>${esc(o.nombre)}</h1><div>Turno ${esc(CJ.liq.turnoId)} · ${fdate(Date.now())}</div><hr><table>${t.detalle.map(d => `<tr><td>${d.cant}x ${esc(d.producto)}${d.desc ? '<br>(desc -' + money(d.desc) + ')' : ''}</td><td style="text-align:right">${money(d.neto)}</td></tr>`).join('')}</table><hr><table><tr><td>Vendido</td><td style="text-align:right">${money(t.vendido)}</td></tr>${t.comision ? `<tr><td>Comisión</td><td style="text-align:right">-${money(t.comision)}</td></tr>` : ''}<tr><td><b>A PAGAR</b></td><td style="text-align:right"><b>${money(t.aPagar)}</b></td></tr><tr><td>Saldo total</td><td style="text-align:right">${money(o.saldo)}</td></tr></table><br><br>Recibí: ____________</body></html>`);
+  document.body.append(bg);
+}
+async function pagarProp(id) {
+  const o = CJ.liq.owners.find(x => x.id === id);
+  const v = await formModal('Registrar pago a ' + o.nombre, [{ k: 'monto', label: 'Monto ($)', type: 'number', req: true, def: o.saldo, attrs: 'step="0.5" min="0" inputmode="decimal"' }, { k: 'metodo', label: 'Método', type: 'select', opts: [['Efectivo', 'Efectivo (sale de la caja)'], ['Transferencia', 'Transferencia']] }, { k: 'nota', label: 'Nota (opcional)' }], {}, `Saldo pendiente: ${money(o.saldo)}`); if (!v) return;
+  run(async () => { CJ.liq = await API.call('pagarLiquidacion', { propietarioId: id, ...v }); drawCaja(); }, 'Pago registrado');
+}
+
+/* ============ Bloque 6: Historial y correcciones ============ */
+const HV = { tab: 'lista', desde: '', hasta: '', rows: [], rep: null, props: [], truncado: false, turnoId: null, f: { canal: '', metodo: '', estatus: '', q: '', prop: '' } };
+const today = () => new Date().toLocaleDateString('sv-SE');
+const estatusVenta = v => v.Estatus === 'Cancelada' ? 'Cancelada' : Number(v.Devuelto) > 0 ? (Number(v.Devuelto) >= Number(v.Total) ? 'Devuelta' : 'Dev. parcial') : 'Pagada';
+function rangoRapido(k) {
+  const d = new Date(), f = x => x.toLocaleDateString('sv-SE'); let a = new Date(d), b = new Date(d);
+  if (k === 'ayer') { a.setDate(a.getDate() - 1); b = new Date(a); }
+  else if (k === 'semana') a.setDate(a.getDate() - ((a.getDay() + 6) % 7));
+  else if (k === 'mes') a.setDate(1);
+  else if (k === 'mespasado') { a = new Date(d.getFullYear(), d.getMonth() - 1, 1); b = new Date(d.getFullYear(), d.getMonth(), 0); }
+  $('hd').value = f(a); $('hh').value = f(b); cargarVentas();
+}
+async function renderVentas() {
+  if (!HV.desde) HV.desde = HV.hasta = today();
+  const mgr = isMgr(); if (!mgr) HV.tab = 'lista';
+  $('view').innerHTML = `${mgr ? `<div class="tabs"><button class="${HV.tab === 'lista' ? 'on' : ''}" onclick="HV.tab='lista';renderVentas()">Ventas</button><button class="${HV.tab === 'prop' ? 'on' : ''}" onclick="HV.tab='prop';renderVentas()">Por propietario</button></div>` : ''}
+  <div class="bar"><label class="sub">Desde <input type="date" id="hd" value="${HV.desde}" style="width:auto"></label><label class="sub">Hasta <input type="date" id="hh" value="${HV.hasta}" style="width:auto"></label><button onclick="cargarVentas()">Buscar</button><button class="ghost" onclick="exportCSV()">Exportar CSV</button></div>
+  <div class="chips">${[['hoy', 'Hoy'], ['ayer', 'Ayer'], ['semana', 'Esta semana'], ['mes', 'Este mes'], ['mespasado', 'Mes pasado']].map(r => `<button onclick="rangoRapido('${r[0]}')">${r[1]}</button>`).join('')}</div><div id="hfilters"></div><div id="hres"></div>`;
+  if (mgr && !HV.props.length) { try { HV.props = await API.list('Propietarios'); } catch (e) {} }
+  cargarVentas();
+}
+async function cargarVentas() {
+  HV.desde = $('hd').value || today(); HV.hasta = $('hh').value || HV.desde;
+  const desde = new Date(HV.desde + 'T00:00:00').toISOString(), hasta = new Date(HV.hasta + 'T23:59:59.999').toISOString();
+  $('hres').innerHTML = '<p class="muted">Cargando…</p>';
+  try {
+    if (HV.tab === 'prop') { HV.rep = await API.call('reportePropietarios', { desde, hasta }); drawFilters(); return drawProp(); }
+    const [r, t] = await Promise.all([API.call('ventasLista', { desde, hasta, propietarioId: HV.f.prop || '' }), API.call('turnoActual')]);
+    HV.rows = r.ventas; HV.truncado = r.truncado; HV.turnoId = t.turno ? t.turno.ID : null;
+  } catch (e) { return toast(e.message, 'error'); }
+  drawFilters(); drawVentas();
+}
+function drawFilters() {
+  const sel = (key, opts, all) => `<select onchange="HV.f.${key}=this.value;drawVentas()">${opts.map(c => `<option value="${c}" ${HV.f[key] === c ? 'selected' : ''}>${c || all}</option>`).join('')}</select>`;
+  $('hfilters').innerHTML = HV.tab !== 'lista' ? '' : `<div class="bar"><input id="hq" placeholder="Folio, cliente, mesa o usuario" value="${esc(HV.f.q)}" oninput="HV.f.q=this.value;drawVentas()">${sel('canal', ['', 'Mostrador', 'Mesa', 'Delivery'], 'Todos los canales')}${sel('metodo', ['', 'Efectivo', 'Tarjeta', 'Transferencia', 'Mixto'], 'Todos los métodos')}${sel('estatus', ['', 'Pagada', 'Dev. parcial', 'Devuelta', 'Cancelada'], 'Todos los estatus')}${isMgr() ? `<select onchange="HV.f.prop=this.value;cargarVentas()"><option value="">Todos los propietarios</option>${HV.props.map(o => `<option value="${esc(o.ID)}" ${HV.f.prop === o.ID ? 'selected' : ''}>${esc(o.Nombre)}</option>`).join('')}</select>` : ''}</div>`;
+}
+const filtradas = () => { const f = HV.f, q = f.q.toLowerCase(); return HV.rows.filter(v => (!f.canal || v.Canal === f.canal) && (!f.metodo || v.Metodo === f.metodo) && (!f.estatus || estatusVenta(v) === f.estatus) && (!q || [v.Folio, v.Cliente, v.Mesa, v.Usuario].some(x => String(x).toLowerCase().includes(q)))); };
+function drawVentas() {
+  if (HV.tab !== 'lista') return;
+  const rows = filtradas(), pag = rows.filter(v => v.Estatus === 'Pagada'), canc = rows.filter(v => v.Estatus === 'Cancelada'), pr = HV.f.prop, pn = pr ? nameOf(HV.props, pr) : '';
+  const parte = v => pr ? Number(v.Parte) - Number(v.ParteDev) : Number(v.Total) - (Number(v.Devuelto) || 0);
+  const neto = r2(pag.reduce((t, v) => t + parte(v), 0)), dev = r2(pag.reduce((t, v) => t + (pr ? Number(v.ParteDev) : Number(v.Devuelto) || 0), 0));
+  const k = (l, v) => `<div class="card kpi"><span>${l}</span><b>${v}</b></div>`;
+  $('hres').innerHTML = `${HV.truncado ? '<p class="muted" style="margin-bottom:8px">Se muestran las ventas más recientes; el rango pedido puede tener más.</p>' : ''}<div class="grid" style="margin-bottom:14px">${k(pr ? 'Vendido por ' + esc(pn) : 'Ventas netas', money(neto))}${k('Tickets', pag.length)}${k('Devoluciones', money(dev))}${k('Canceladas', canc.length + ' · ' + money(canc.reduce((t, v) => t + Number(v.Total), 0)))}</div>
+  ${pr ? `<p class="sub" style="margin-bottom:8px">Cada ticket muestra la parte que corresponde a ${esc(pn)}; el total del ticket puede incluir platillos de otros propietarios.</p>` : ''}
+  <div class="tw"><table class="table"><tr><th>Folio</th><th>Fecha</th><th>Canal</th><th>Método</th><th>${pr ? 'Total ticket' : 'Total'}</th>${pr ? `<th>Parte de ${esc(pn)}</th>` : ''}<th>Estatus</th><th>Usuario</th><th></th></tr>${rows.map(v => { const e = estatusVenta(v); return `<tr class="${v.Estatus === 'Cancelada' ? 'off' : ''}"><td>#${v.Folio}</td><td>${fdate(v.Fecha)}</td><td>${v.Canal}${v.Mesa ? ' ' + esc(v.Mesa) : ''}${v.Cliente ? ' · ' + esc(v.Cliente) : ''}</td><td>${v.Metodo}</td><td>${money(v.Total)}</td>${pr ? `<td><b>${money(v.Parte)}</b></td>` : ''}<td><span class="badge ${e === 'Pagada' ? 'ok' : 'warn'}">${e}</span></td><td>${esc(v.Usuario)}</td><td><button class="mini ghost" onclick="verVenta(${v.Folio})">Ver</button></td></tr>`; }).join('') || `<tr><td colspan="9" class="muted">No hay ventas con esos filtros.</td></tr>`}</table></div>`;
+}
+
+/* ---- Reporte por propietario ---- */
+function drawProp() {
+  const R = HV.rep, k = (l, v) => `<div class="card kpi"><span>${l}</span><b>${v}</b></div>`;
+  $('hres').innerHTML = `${R.truncado ? '<p class="muted" style="margin-bottom:8px">Se consideran las ventas más recientes; el rango pedido puede tener más.</p>' : ''}<div class="grid" style="margin-bottom:14px">${k('Ventas netas del periodo', money(R.totalNeto))}${k('Tickets', R.tickets)}${k('Propietarios con ventas', R.owners.length)}</div>
+  <div class="tw"><table class="table"><tr><th>Propietario</th><th>Tickets</th><th>Platillos</th><th>Vendido</th><th>Desc.</th><th>Devol.</th><th>Neto</th><th>Comisión</th><th>A pagar</th><th></th></tr>${R.owners.map(o => `<tr><td><b>${esc(o.nombre)}</b>${o.dueno ? `<br><small class="muted">Dueño · incluye envíos ${money(o.envios)}</small>` : ''}</td><td>${o.tickets}</td><td>${o.platillos}</td><td>${money(o.bruto)}</td><td>${o.descuentos ? '−' + money(o.descuentos) : '—'}</td><td>${o.devoluciones ? '−' + money(o.devoluciones) : '—'}</td><td><b>${money(o.neto)}</b></td><td>${o.comision ? money(o.comision) : '—'}</td><td>${o.dueno ? '—' : money(o.aPagar)}</td><td><button class="mini ghost" onclick="propDetalle('${esc(o.id)}')">Detalle</button><button class="mini ghost" onclick="propImprimir('${esc(o.id)}')">Imprimir</button></td></tr>`).join('') || '<tr><td colspan="10" class="muted">No hay ventas en este periodo.</td></tr>'}</table></div>
+  <p class="sub" style="margin-top:10px">Se cuenta por fecha de venta. Ventas pagadas, ya sin descuentos, devoluciones ni ventas canceladas. Para pagar saldos pendientes usa Caja → Liquidación.</p>`;
+}
+const propPeriodo = () => HV.desde === HV.hasta ? HV.desde : `${HV.desde} al ${HV.hasta}`;
+function propDetalle(id) {
+  const o = HV.rep.owners.find(x => x.id === id), bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" style="max-width:520px;max-height:92vh;overflow:auto"><h3>${esc(o.nombre)}</h3><p class="muted">${propPeriodo()}</p><div class="h2">Lo que vendió</div><table class="table">${o.productos.map(p => `<tr><td>${p.cant}× ${esc(p.producto)}</td><td style="text-align:right">${money(p.neto)}</td></tr>`).join('') || '<tr><td class="muted">Solo envíos.</td></tr>'}</table>${o.envios ? `<div class="tot"><span>Envíos</span><span>${money(o.envios)}</span></div>` : ''}<div class="tot big"><span>Neto</span><span>${money(o.neto)}</span></div><div class="h2" style="margin-top:12px">Por día</div><table class="table">${o.dias.map(d => `<tr><td>${d.dia}</td><td style="text-align:right">${money(d.neto)}</td></tr>`).join('')}</table><div class="row"><button class="ghost" id="px">Cerrar</button><button id="pp">Imprimir</button></div></div>`;
+  bg.querySelector('#px').onclick = () => bg.remove(); bg.querySelector('#pp').onclick = () => propImprimir(id); document.body.append(bg);
+}
+function propImprimir(id) {
+  const o = HV.rep.owners.find(x => x.id === id), row = (a, b) => `<tr><td>${a}</td><td style="text-align:right">${b}</td></tr>`;
+  printFrame(`<html><head><style>@page{margin:0}body{font:12px monospace;width:${tw()};margin:3mm}h1{font-size:15px;text-align:center;margin:0}table{width:100%;border-collapse:collapse}hr{border:0;border-top:1px dashed #000}</style></head><body><h1>${esc(S.config.negocio)}</h1><h1>${esc(o.nombre)}</h1><div>Periodo: ${propPeriodo()}</div><hr><table>${o.productos.map(p => row(p.cant + 'x ' + esc(p.producto), money(p.neto))).join('')}${o.envios ? row('Envíos', money(o.envios)) : ''}</table><hr><table>${row('Vendido', money(o.bruto))}${o.descuentos ? row('Descuentos', '-' + money(o.descuentos)) : ''}${o.devoluciones ? row('Devoluciones', '-' + money(o.devoluciones)) : ''}${row('<b>NETO</b>', '<b>' + money(o.neto) + '</b>')}${o.comision ? row('Comisión', '-' + money(o.comision)) + row('<b>A PAGAR</b>', '<b>' + money(o.aPagar) + '</b>') : ''}</table><hr><b>POR DÍA</b><table>${o.dias.map(d => row(d.dia, money(d.neto))).join('')}</table></body></html>`);
+}
+function exportCSV() {
+  const q = x => '"' + String(x ?? '').replace(/"/g, '""') + '"'; let cols, data, name;
+  if (HV.tab === 'prop') {
+    cols = ['Propietario', 'Tickets', 'Platillos', 'Vendido', 'Descuentos', 'Devoluciones', 'Neto', 'Comisión', 'A pagar', 'Envíos'];
+    data = HV.rep.owners.map(o => [o.nombre, o.tickets, o.platillos, o.bruto, o.descuentos, o.devoluciones, o.neto, o.comision, o.dueno ? '' : o.aPagar, o.envios]); name = `propietarios_${HV.desde}_${HV.hasta}`;
+  } else {
+    const pr = HV.f.prop; cols = ['Folio', 'Fecha', 'Canal', 'Mesa', 'Cliente', 'Metodo', 'Subtotal', 'Descuento', 'Envio', 'Total', 'Devuelto', 'Estatus', 'Usuario'].concat(pr ? ['Parte', 'ParteDev'] : []);
+    data = filtradas().map(v => cols.map(c => c === 'Fecha' ? new Date(v.Fecha).toLocaleString('es-MX') : v[c])); name = `ventas_${HV.desde}_${HV.hasta}`;
+  }
+  const csv = '\ufeff' + [cols.join(',')].concat(data.map(r => r.map(q).join(','))).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = name + '.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+async function askPin() {
+  if (isMgr()) return '';
+  const v = await formModal('Autorización', [{ k: 'pin', label: 'PIN de Admin o Gerente', type: 'password', req: true, attrs: 'inputmode="numeric" maxlength="4"' }], {}, 'Las correcciones requieren autorización de un Admin o Gerente.');
+  return v ? v.pin : null;
+}
+async function verVenta(folio) {
+  let d; try { d = await API.call('ventaDetalle', { folio }); } catch (e) { return toast(e.message, 'error'); }
+  const v = d.venta; let pagos = []; try { pagos = JSON.parse(v.Pagos || '[]'); } catch (e) {}
+  const pagada = v.Estatus === 'Pagada', bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" style="max-width:520px;max-height:92vh;overflow:auto"><h3>Venta #${v.Folio} <span class="badge ${estatusVenta(v) === 'Pagada' ? 'ok' : 'warn'}">${estatusVenta(v)}</span></h3><p class="muted">${fdate(v.Fecha)} · ${v.Canal}${v.Mesa ? ' ' + esc(v.Mesa) : ''}${v.Cliente ? ' · ' + esc(v.Cliente) : ''} · ${esc(v.Usuario)} · ${esc(v.TurnoID || 'sin turno')}</p>
+  ${v.Estatus === 'Cancelada' ? `<p class="err" style="text-align:left">Cancelada: ${esc(v.MotivoCancel)} — ${esc(v.CanceloPor)}</p>` : ''}
+  <table class="table">${d.lineas.map(l => `<tr><td>${l.Cantidad}× ${esc(l.Producto)}${l.devCant ? `<br><small class="muted">Devuelto: ${l.devCant}</small>` : ''}</td><td style="text-align:right">${money(l.TotalNeto)}</td></tr>`).join('')}</table>
+  ${Number(v.Descuento) ? `<div class="tot"><span>Descuentos</span><span>−${money(v.Descuento)}</span></div>` : ''}<div class="tot big"><span>Total</span><span>${money(v.Total)}</span></div>
+  <div class="sub">${pagos.map(p => p.metodo + ' ' + money(p.monto)).join(' · ')}${Number(v.Cambio) ? ' · Cambio ' + money(v.Cambio) : ''}</div>
+  ${d.devoluciones.length ? `<div class="h2" style="margin-top:12px">Devoluciones</div>${d.devoluciones.map(x => `<div class="tot"><span>${fdate(x.Fecha)} · ${x.Metodo} · ${esc(x.Motivo)}</span><span>−${money(x.Monto)}</span></div>`).join('')}` : ''}
+  <div class="row" style="flex-wrap:wrap"><button class="ghost" id="vx">Cerrar</button><button class="ghost" id="vp">Reimprimir</button>${pagada ? '<button class="ghost" id="vd">Devolución</button>' : ''}${pagada && !Number(v.Devuelto) ? '<button id="vc" style="background:var(--chile);color:#fff">Cancelar venta</button>' : ''}</div></div>`;
+  const q = id => bg.querySelector(id); q('#vx').onclick = () => bg.remove();
+  q('#vp').onclick = () => printTicket({ folio: v.Folio, fecha: v.Fecha, canal: v.Canal, mesa: v.Mesa, cliente: v.Cliente, direccion: v.Direccion, descuento: Number(v.Descuento), total: Number(v.Total), pagos, cambio: Number(v.Cambio), lineas: d.lineas, reimp: true, cancelada: v.Estatus === 'Cancelada' });
+  if (pagada) q('#vd').onclick = () => { bg.remove(); devolverUI(d); };
+  if (q('#vc')) q('#vc').onclick = () => { bg.remove(); cancelarVentaUI(v); };
+  document.body.append(bg);
+}
+async function cancelarVentaUI(v) {
+  const otro = String(v.TurnoID) !== String(HV.turnoId);
+  const fields = [{ k: 'motivo', label: 'Motivo de la cancelación', req: true }].concat(otro ? [{ k: 'metodo', label: 'Cómo se devuelve el dinero', type: 'select', opts: [['Efectivo', 'Efectivo (sale de la caja)'], ['Tarjeta', 'Tarjeta'], ['Transferencia', 'Transferencia']] }] : []);
+  const x = await formModal(`Cancelar venta #${v.Folio}`, fields, {}, otro ? 'Es de un turno anterior: su corte no cambia. El ajuste se registra en el turno actual (debe estar abierto).' : 'La venta dejará de contar en el turno actual.'); if (!x) return;
+  const authPin = await askPin(); if (authPin === null) return;
+  run(async () => { await API.call('cancelarVenta', { folio: v.Folio, motivo: x.motivo, metodo: x.metodo, authPin }); await cargarVentas(); }, 'Venta cancelada');
+}
+function devolverUI(d) {
+  const v = d.venta, items = d.lineas.map(l => ({ ...l, resta: Number(l.Cantidad) - l.devCant })).filter(l => l.resta > 0), bg = document.createElement('div'); bg.className = 'modal-bg';
+  if (!items.length) return toast('Esta venta ya se devolvió completa', 'error');
+  bg.innerHTML = `<div class="modal" style="max-width:480px;max-height:92vh;overflow:auto"><h3>Devolución · venta #${v.Folio}</h3><p class="muted">Indica cuántas piezas devuelve el cliente. El monto respeta los descuentos aplicados.</p>
+  ${items.map((l, i) => `<div class="tot" style="align-items:center"><span>${esc(l.Producto)} <small class="muted">(quedan ${l.resta})</small></span><input type="number" min="0" max="${l.resta}" step="1" data-i="${i}" placeholder="0" style="width:80px"></div>`).join('')}
+  <div class="tot big" style="margin-top:8px"><span>Devolver</span><span id="dt">$0.00</span></div>
+  <div class="form"><label>Cómo se devuelve<select id="dm"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select></label><label>Motivo<input id="dn"></label></div><div class="err" id="de"></div><div class="row"><button class="ghost" id="dx">Cancelar</button><button id="dok">Registrar devolución</button></div></div>`;
+  const ins = [...bg.querySelectorAll('input[data-i]')], monto = i => { const l = items[i], c = Math.min(l.resta, Math.floor(Number(ins[i].value)) || 0); return c <= 0 ? 0 : c === l.resta ? r2(Number(l.TotalNeto) - l.devMonto) : r2(Number(l.TotalNeto) / Number(l.Cantidad) * c); };
+  bg.addEventListener('input', () => { bg.querySelector('#dt').textContent = money(items.reduce((t, _, i) => t + monto(i), 0)); });
+  bg.querySelector('#dx').onclick = () => bg.remove();
+  bg.querySelector('#dok').onclick = async () => {
+    const ren = ins.map((x, i) => ({ Linea: items[i].Linea, Cantidad: Math.floor(Number(x.value)) || 0 })).filter(x => x.Cantidad > 0), motivo = bg.querySelector('#dn').value.trim();
+    if (!ren.length) return bg.querySelector('#de').textContent = 'Selecciona qué devolver.'; if (!motivo) return bg.querySelector('#de').textContent = 'Indica el motivo.';
+    const authPin = await askPin(); if (authPin === null) return;
+    try { const t = await API.call('devolverVenta', { folio: v.Folio, renglones: ren, motivo, metodo: bg.querySelector('#dm').value, authPin }); bg.remove(); toast('Devolución registrada: ' + money(t)); cargarVentas(); } catch (e) { bg.querySelector('#de').textContent = e.message; }
+  };
+  document.body.append(bg);
+}
+
+/* ============ Bloque 11: Configuración ============ */
+const tw = () => (String(S.config.ticket_ancho) === '58' ? '48mm' : '72mm');
+function applyTheme() { const t = localStorage.getItem('pos_theme') || ''; if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
+applyTheme();
+async function renderConfig() {
+  $('view').innerHTML = '<p class="muted">Cargando…</p>';
+  let c, props, bk; try { [c, props, bk] = await Promise.all([API.call('getConfig'), API.list('Propietarios'), API.call('respaldoEstado')]); } catch (e) { return toast(e.message, 'error'); }
+  S.config = c; CFG_BK = bk;
+  const t = (k, label, ph = '') => `<label>${label}<input id="c_${k}" value="${esc(c[k] ?? '')}" placeholder="${ph}"></label>`, n = (k, label, note = '') => `<label>${label}<input id="c_${k}" type="number" min="0" inputmode="numeric" value="${esc(c[k] ?? '')}"></label>${note ? `<div class="sub">${note}</div>` : ''}`;
+  $('view').innerHTML = `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+  <div class="card form"><h3>Negocio y ticket</h3>${t('negocio', 'Nombre del negocio')}${t('subtitulo', 'Subtítulo o giro')}${t('sucursal', 'Sucursal')}${t('direccion', 'Dirección')}${t('telefono', 'Teléfono')}${t('rfc', 'RFC (opcional)')}${t('pie_ticket', 'Mensaje al pie del ticket')}
+    <label>Ancho de papel<select id="c_ticket_ancho"><option value="80" ${String(c.ticket_ancho) !== '58' ? 'selected' : ''}>80 mm</option><option value="58" ${String(c.ticket_ancho) === '58' ? 'selected' : ''}>58 mm</option></select></label>
+    <button class="ghost" style="margin-top:12px" onclick="ticketPrueba()">Imprimir ticket de prueba</button></div>
+  <div class="card form"><h3>Operación</h3>${n('num_mesas', 'Número de mesas', 'Entre 1 y 60.')}${n('fondo_caja', 'Fondo de caja sugerido ($)', 'Se propone al abrir cada turno.')}${n('tope_libre', 'Tope de producto libre sin autorización ($)', '0 = sin tope. Arriba de este monto, un Cajero o Mesero necesita PIN de supervisor.')}
+    <label>Propietario que recibe los envíos<select id="c_propietario_envios">${props.filter(p => p.Activo).map(p => `<option value="${esc(p.ID)}" ${p.ID === (c.propietario_envios || 'P-001') ? 'selected' : ''}>${esc(p.Nombre)}</option>`).join('')}</select></label>
+    ${n('siguiente_folio', 'Siguiente folio', 'Solo puede subir, nunca bajar, para no repetir folios.')}
+    <button style="margin-top:14px" onclick="guardarConfigUI()">Guardar cambios</button></div>
+  <div class="card form"><h3>Menú digital y envíos</h3>${t('whatsapp', 'WhatsApp del negocio (10 dígitos)')}${t('menu_eta', 'Tiempo de entrega que verá el cliente', '30–40 min')}${t('menu_mensaje', 'Mensaje cuando está cerrado', 'Abrimos a las 6:00 pm')}
+    <label>Ubicación del local (para calcular envíos)</label><div class="pwrap"><input id="c_local_lat" value="${esc(c.local_lat ?? '')}" placeholder="Latitud" inputmode="decimal"><input id="c_local_lng" value="${esc(c.local_lng ?? '')}" placeholder="Longitud" inputmode="decimal"></div><button class="ghost" type="button" style="margin:8px 0 12px" onclick="ubicLocal()">📍 Usar mi ubicación actual (estando en el local)</button>
+    ${n('envio_gratis_m', 'Envío gratis hasta (metros)')}${n('envio_base', 'Tarifa base de envío ($)')}${n('envio_km_incluido', 'Km incluidos en la tarifa base')}${n('envio_por_km', '$ por cada km adicional')}${n('envio_tope', 'Tope máximo de envío ($)', '0 = sin tope.')}${n('envio_max_km', 'Distancia máxima de entrega (km)', '0 = sin límite.')}${n('web_min_pedido', 'Pedido mínimo ($)', '0 = sin mínimo.')}${n('web_max_total', 'Tope de un pedido web ($, seguridad)', '0 = sin tope.')}
+    ${t('banco', 'Banco (transferencias)')}${t('titular', 'Titular de la cuenta')}${t('clabe', 'CLABE interbancaria')}<button style="margin-top:12px" onclick="guardarConfigUI()">Guardar cambios</button></div>
+  <div class="card"><h3>Respaldos</h3><p class="muted" id="bkinfo"></p><div class="bar" style="margin-top:12px"><button onclick="respaldarAhora()">Respaldar ahora</button><button class="ghost" id="bkauto" onclick="toggleRespaldo()"></button></div><p class="sub">Se guardan copias completas de tu Google Sheet en la carpeta “POS Respaldos” de tu Drive. Se conservan las 14 más recientes.</p></div>
+  <div class="card form"><h3>Este dispositivo</h3><label>Tema<select onchange="localStorage.setItem('pos_theme',this.value);applyTheme()"><option value="" ${!localStorage.getItem('pos_theme') ? 'selected' : ''}>Automático</option><option value="light" ${localStorage.getItem('pos_theme') === 'light' ? 'selected' : ''}>Claro</option><option value="dark" ${localStorage.getItem('pos_theme') === 'dark' ? 'selected' : ''}>Oscuro</option></select></label><p class="sub">Solo afecta a esta pantalla.</p></div></div>`;
+  drawBackup();
+}
+let CFG_BK = {};
+function drawBackup() { $('bkinfo').textContent = CFG_BK.ultimo ? 'Último respaldo: ' + fdate(CFG_BK.ultimo) : 'Aún no hay respaldos.'; $('bkauto').textContent = CFG_BK.auto ? 'Desactivar respaldo diario' : 'Activar respaldo diario (3:00 am)'; }
+function guardarConfigUI() {
+  const keys = ['negocio', 'subtitulo', 'sucursal', 'direccion', 'telefono', 'rfc', 'pie_ticket', 'ticket_ancho', 'num_mesas', 'fondo_caja', 'tope_libre', 'whatsapp', 'menu_eta', 'menu_mensaje', 'local_lat', 'local_lng', 'envio_gratis_m', 'envio_base', 'envio_km_incluido', 'envio_por_km', 'envio_tope', 'envio_max_km', 'web_min_pedido', 'web_max_total', 'banco', 'titular', 'clabe', 'propietario_envios', 'siguiente_folio'], values = {};
+  keys.forEach(k => values[k] = $('c_' + k).value);
+  run(async () => { S.config = await API.call('saveConfig', { values }); $('brand').textContent = S.config.negocio || 'POS Pro'; document.title = S.config.negocio || 'POS Pro'; }, 'Configuración guardada');
+}
+function ticketPrueba() { printTicket({ folio: 0, fecha: new Date().toISOString(), canal: 'Mostrador', mesa: '', cliente: '', descuento: 0, total: 120, pagos: [{ metodo: 'Efectivo', monto: 150 }], cambio: 30, lineas: [{ Cantidad: 2, Producto: 'Producto de prueba', Nota: '', TotalNeto: 120 }] }); }
+function respaldarAhora() { run(async () => { const n = await API.call('respaldar'); CFG_BK = await API.call('respaldoEstado'); drawBackup(); toast('Respaldo creado: ' + n); }); }
+function toggleRespaldo() { run(async () => { await API.call('respaldoAuto', { activo: !CFG_BK.auto }); CFG_BK = await API.call('respaldoEstado'); drawBackup(); }, 'Listo'); }
+
+/* ============ Producto libre ============ */
+const topeLibre = () => { const t = S.config.tope_libre; return t === '' || t === undefined ? 500 : Number(t) || 0; };
+const libreAlto = c => c.libre && topeLibre() > 0 && c.precio * c.qty > topeLibre();
+async function productoLibre() {
+  const owners = P.props.filter(o => o.Activo), rec = JSON.parse(localStorage.getItem('pos_libres') || '[]');
+  if (!owners.length) return toast('Primero crea un propietario en Catálogo', 'error');
+  const last = localStorage.getItem('pos_libre_owner'), bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h3>Producto libre</h3><p class="muted">Para casos extraordinarios que no están en el menú.</p>
+  ${rec.length ? `<div class="sub">Recientes</div><div class="recientes">${rec.map((r, i) => `<button data-i="${i}">${esc(r.n)} · ${money(r.p)}</button>`).join('')}</div>` : ''}
+  <div class="form"><label>Producto<input id="l_n" maxlength="60" autocomplete="off"></label><label>Precio unitario ($)<input id="l_p" type="number" min="0" step="0.5" inputmode="decimal"></label><label>Cantidad<input id="l_c" type="number" min="1" step="1" value="1" inputmode="numeric"></label>
+  <label>Propietario (dueño del producto)<select id="l_o">${owners.map(o => `<option value="${esc(o.ID)}" ${o.ID === last ? 'selected' : ''}>${esc(o.Nombre)}</option>`).join('')}</select></label><label>Nota (opcional)<input id="l_t" maxlength="120"></label>
+  ${isMgr() ? '<label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="l_g" style="width:auto"> Guardar también en el menú</label>' : ''}</div>
+  <div class="tot" style="margin-top:8px"><span>Total</span><b id="l_tot">$0.00</b></div><div class="err" id="l_e" role="alert"></div><div class="row"><button class="ghost" id="l_x">Cancelar</button><button id="l_ok">Agregar</button></div></div>`;
+  const q = id => bg.querySelector(id), upd = () => { q('#l_tot').textContent = money((Number(q('#l_p').value) || 0) * (Math.floor(Number(q('#l_c').value)) || 0)); };
+  bg.addEventListener('input', upd); q('#l_x').onclick = () => bg.remove();
+  bg.querySelectorAll('.recientes button').forEach(b => b.onclick = () => { const r = rec[b.dataset.i]; q('#l_n').value = r.n; q('#l_p').value = r.p; q('#l_o').value = r.o; upd(); q('#l_c').focus(); });
+  const go = async () => {
+    const n = q('#l_n').value.trim(), pr = r2(q('#l_p').value), c = Math.floor(Number(q('#l_c').value)), o = q('#l_o').value, nota = q('#l_t').value.trim(), err = m => q('#l_e').textContent = m;
+    if (!n) return err('Escribe el nombre del producto.'); if (!(pr > 0)) return err('El precio debe ser mayor a 0.'); if (!(c >= 1)) return err('La cantidad debe ser al menos 1.');
+    if (!isMgr() && topeLibre() > 0 && pr * c > topeLibre()) { if (!(await needAuth())) return; }
+    localStorage.setItem('pos_libre_owner', o); localStorage.setItem('pos_libres', JSON.stringify([{ n, p: pr, o }].concat(rec.filter(r => !(r.n === n && r.p === pr && r.o === o))).slice(0, 8)));
+    if (q('#l_g') && q('#l_g').checked) {
+      try { const prod = await API.save('Productos', { ID: '', Nombre: n, Categoria: '', PropietarioID: o, Precio: pr, Costo: 0, Imagen: '', Activo: true, Disponible: true }); P.prods.push(prod); drawGrid(); for (let i = 0; i < c; i++) addItem(prod.ID); if (nota) { const l = P.cart.find(x => x.id === prod.ID); if (l) { l.nota = nota; drawCart(); } } toast('Agregado y guardado en el menú'); }
+      catch (e) { return err(e.message); }
+    } else { P.cart.push({ id: 'LIBRE', nombre: n, precio: pr, propId: o, qty: c, nota, desc: 0, cortesia: false, libre: true }); drawCart(); toast('Producto libre agregado'); }
+    bg.remove();
+  };
+  q('#l_ok').onclick = go; bg.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); go(); } });
+  document.body.append(bg); q('#l_n').focus();
+}
+
+/* ============ Menú digital: pedidos web ============ */
+const PW = { n: null };
+function drawMenuSw() {
+  const b = $('menuSw'); if (!b) return; const on = String(S.config.menu_abierto) === '1', ok = !['Cocina', 'Mesero'].includes(S.user.rol);
+  b.className = 'pill ' + (on ? 'ok' : 'bad') + (ok ? '' : ' hidden'); b.innerHTML = `<b></b>Menú web: ${on ? 'Abierto' : 'Cerrado'}`;
+}
+async function toggleMenu() {
+  const on = String(S.config.menu_abierto) === '1';
+  if (on && !(await confirmModal('Cerrar menú web', 'Los clientes ya no podrán hacer pedidos a domicilio hasta que lo abras de nuevo.', 'Cerrar menú'))) return;
+  run(async () => { await API.call('menuToggle', { abierto: !on }); S.config.menu_abierto = on ? '0' : '1'; drawMenuSw(); }, on ? 'Menú web cerrado' : 'Menú web abierto');
+}
+function startWebPoll() {
+  clearInterval(window._pwPoll); if (!['Admin', 'Gerente', 'Cajero', 'Mesero'].includes(S.user.rol)) return; PW.n = null;
+  const tick = async () => {
+    if (document.hidden) return;
+    try {
+      const r = await API.call('pedidosWebConteo');
+      if (PW.n !== null && r.n > PW.n) { beep(); toast('🌐 Nuevo pedido web por aprobar'); }
+      PW.n = r.n; const b = document.querySelector('.nav[data-id="mesas"]');
+      if (b) { let m = b.querySelector('small'); if (!m) { m = document.createElement('small'); b.append(m); } m.textContent = r.n ? '🌐 ' + r.n : ''; }
+    } catch (e) {}
+  };
+  tick(); window._pwPoll = setInterval(tick, 20000);
+}
+function webBanner(x) {
+  if (!x || x.Origen !== 'Web') return '';
+  return `<div class="box" style="margin-bottom:8px">🌐 <b>${esc(x.FolioWeb)}</b> · 📞 ${esc(x.Telefono)}<br>Pago: <b>${esc(x.PagoWeb)}</b>${x.PagaCon ? ' · paga con ' + money(x.PagaCon) : ''}${x.PagoWeb === 'Transferencia' ? '<br>⚠ Verifica el comprobante antes de cobrar' : ''}${x.Estado === 'PorAprobar' ? '<br>⏳ Por aprobar: usa “Enviar a cocina” para aceptarlo' : ''}</div>`;
+}
+function webSection(l) {
+  if (!l.length) return '';
+  return `<div class="h2">🌐 Pedidos web por aprobar</div><div class="grid" style="margin-bottom:22px">${l.map(x => `<div class="card"><b>${esc(x.FolioWeb)} · ${esc(x.Cliente)}</b> <span class="sub">hace ${mins(x.Creada)} min</span><p class="sub" style="margin:4px 0">📞 ${esc(x.Telefono)}<br>📍 ${esc(x.Direccion)}${x.Nota ? '<br>📝 ' + esc(x.Nota) : ''}</p><div class="sub">${x.Items.map(i => `${i.Cantidad}× ${esc(i.Producto)}`).join('<br>')}</div><div class="tot"><span>${esc(x.PagoWeb)}${x.PagaCon ? ' · paga con ' + money(x.PagaCon) : ''}</span><b>${money(sesTotal(x))}</b></div><div class="bar" style="margin:8px 0 0"><button class="mini" onclick="aceptarWeb('${x.SesionID}')">Aceptar y enviar a cocina</button><button class="mini ghost" onclick="abrirSesion('${x.SesionID}')">Ver / editar</button><button class="mini ghost" onclick="rechazarWeb('${x.SesionID}')">Rechazar</button></div></div>`).join('')}</div>`;
+}
+function aceptarWeb(id) {
+  run(async () => { const r = await API.call('pedidoWebAceptar', { id }); if (localStorage.getItem('pos_comanda') !== '0') printComanda(r.ses, r.nuevos); await loadSes(); drawMesas(); }, 'Pedido aceptado y enviado a cocina');
+}
+async function rechazarWeb(id) {
+  const v = await formModal('Rechazar pedido web', [{ k: 'm', label: 'Motivo (lo verá el cliente)', req: true, def: 'Fuera de zona de entrega' }]); if (!v) return;
+  run(async () => { await API.call('pedidoWebRechazar', { id, motivo: v.m }); await loadSes(); drawMesas(); }, 'Pedido rechazado');
+}
+function ubicLocal() {
+  if (!navigator.geolocation) return toast('Tu navegador no permite ubicación', 'error');
+  navigator.geolocation.getCurrentPosition(p => { $('c_local_lat').value = p.coords.latitude.toFixed(6); $('c_local_lng').value = p.coords.longitude.toFixed(6); toast('Ubicación capturada. Guarda los cambios.'); }, () => toast('No se pudo obtener la ubicación', 'error'), { enableHighAccuracy: true, timeout: 15000 });
+}
+
+/* ============ Arranque ============ */
+(S.url ? (S.token && S.user ? startApp : initLogin) : () => show('setup'))();
+</script>
+</body>
+</html>
